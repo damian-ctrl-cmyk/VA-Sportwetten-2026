@@ -1,0 +1,1755 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Abpfiff! – Das Wett-Escape</title>
+<meta name="description" content="Online-Escape-Spiel zu den rechtlichen Rahmenbedingungen von Fussballwetten in der Schweiz. Kostenlos, ohne echte Wetten, ohne Geld- oder Sachpreise.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --night:#07140e; --pitch:#1d6b3a; --pitch2:#18592f; --card:#fbf8ef; --ink:#17201b; --muted:#5d665f;
+    --line:#ddd7c6; --gold:#f5c542; --ok:#1f9a55; --ok-bg:#e2f5e9; --bad:#d23b30; --bad-bg:#fde8e6;
+    --led:#ffb627; --chalk:#eef4ef; --blue:#2f6fd0;
+    --display:"Bebas Neue",Impact,"Arial Narrow",sans-serif;
+    --body:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  html{background:var(--night)}
+  body{font-family:var(--body);color:var(--chalk);line-height:1.5;min-height:100vh;
+    background:radial-gradient(ellipse at 50% -10%, rgba(255,255,220,.18), transparent 55%),
+      repeating-linear-gradient(90deg,var(--pitch) 0 70px,var(--pitch2) 70px 140px);
+    background-attachment:fixed}
+  body::before{content:"";position:fixed;inset:0;background:linear-gradient(rgba(7,20,14,.55),rgba(7,20,14,.78));pointer-events:none;z-index:-1;transition:background 1.2s}
+  body.lightsout::before{background:linear-gradient(rgba(3,6,10,.82),rgba(3,6,10,.9))}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 16px 56px}
+  button,input,select,textarea{font:inherit}
+  .hidden{display:none!important}
+  :focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+  /* ---------- Header ---------- */
+  .hero{position:relative;margin:0 -16px;overflow:hidden;border-bottom:4px solid var(--gold)}
+  .hero svg{display:block;width:100%;height:auto;min-height:210px;transition:filter 1.2s}
+  .hero .title{position:absolute;left:0;right:0;top:10%;text-align:center;padding:0 16px}
+  .hero h1{font-family:var(--display);font-weight:400;font-size:clamp(2.6rem,9vw,5.4rem);line-height:.9;margin:0;letter-spacing:2px;color:#fff;text-shadow:0 4px 0 rgba(0,0,0,.35),0 0 30px rgba(255,220,120,.35)}
+  .hero .sub{display:inline-block;margin-top:8px;font-family:var(--display);letter-spacing:2px;font-size:clamp(.95rem,3vw,1.4rem);color:var(--gold);background:rgba(5,11,24,.82);padding:4px 14px;border-radius:999px;border:1px solid rgba(245,197,66,.4)}
+  .beam{animation:sway 6s ease-in-out infinite alternate;transform-origin:top center;transition:opacity .4s}
+  .beam.b2{animation-delay:-3s}
+  @keyframes sway{from{transform:rotate(-4deg)}to{transform:rotate(4deg)}}
+  .lightsout .beam,.lightsout .lamp{opacity:0}
+  .lightsout .hero svg{filter:brightness(.55) saturate(.8)}
+  .emergency{opacity:0;transition:opacity .4s}
+  .lightsout .emergency{opacity:1;animation:alarm 1.2s infinite}
+  @keyframes alarm{50%{opacity:.25}}
+  .ball{animation:bounce 1.6s cubic-bezier(.3,0,.7,1) infinite}
+  @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-26px)}}
+
+  /* ---------- Anzeigetafel ---------- */
+  .board{position:sticky;top:0;z-index:20;margin:16px 0 0;background:#0b0d0c;border:3px solid #2a2f2c;border-radius:14px;padding:8px 12px 6px;display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap;box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 0 0 2px #000}
+  .led{font-family:var(--display);color:var(--led);letter-spacing:2px;text-shadow:0 0 10px rgba(255,182,39,.6);line-height:1}
+  .led small{display:block;font-family:var(--body);font-size:.62rem;color:#8a8f8c;letter-spacing:2px;margin-bottom:3px;text-shadow:none}
+  .led span{font-size:1.8rem}
+  .slots{display:flex;gap:4px;flex:1;justify-content:center}
+  .slot{width:30px;height:42px;border-radius:6px;background:#161a18;border:1px solid #2c322f;display:grid;place-items:center;font-family:var(--display);font-size:1.7rem;color:#2c322f;background-image:radial-gradient(#222824 1px,transparent 1.2px);background-size:5px 5px}
+  .slot.gap{margin-left:8px}
+  .slot.filled{color:var(--led);text-shadow:0 0 12px rgba(255,182,39,.8)}
+  .slot.flash{animation:flip .6s ease}
+  @keyframes flip{0%{transform:rotateX(90deg)}100%{transform:rotateX(0)}}
+  .boardbtns{display:flex;gap:6px}
+  .iconbtn{background:#1b201d;border:1px solid #333a36;color:#ddd;border-radius:10px;min-width:40px;height:40px;cursor:pointer;font-size:1rem;padding:0 9px;position:relative}
+  .iconbtn:hover{background:#262c29}
+  .iconbtn.on{border-color:var(--led)}
+  .iconbtn .badge{position:absolute;top:-6px;right:-6px;background:var(--led);color:#111;border-radius:999px;font-size:.65rem;font-weight:800;padding:1px 5px}
+  .ticker{flex:1 1 100%;overflow:hidden;white-space:nowrap;border-top:1px solid #222;padding-top:4px;height:22px;position:relative}
+  .ticker span{display:inline-block;padding-left:100%;font-family:var(--display);letter-spacing:2px;color:#9fe8a8;font-size:1rem;animation:marquee 16s linear infinite;text-shadow:0 0 8px rgba(80,255,120,.45)}
+  @keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+  @media (max-width:760px){
+    .led span{font-size:1.35rem}
+    .slots{order:5;flex:1 1 100%;gap:3px}
+    .slot{width:auto;flex:1;height:32px;font-size:1.3rem}
+    .slot.gap{margin-left:5px}
+    .boardbtns{margin-left:auto}
+    .iconbtn{min-width:34px;height:34px;padding:0 6px;font-size:.9rem}
+    .ticker{order:6}
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn{border:0;border-radius:12px;padding:13px 20px;cursor:pointer;font-weight:800;background:var(--gold);color:#1b1f1c;box-shadow:0 4px 0 #b38a17;transition:transform .08s,box-shadow .08s}
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #b38a17}
+  .btn:disabled{opacity:.45;cursor:default;transform:none}
+  .btn.ok{background:var(--ok);color:#fff;box-shadow:0 4px 0 #136c3a}
+  .btn.bad{background:var(--bad);color:#fff;box-shadow:0 4px 0 #8f231c}
+  .btn.blue{background:var(--blue);color:#fff;box-shadow:0 4px 0 #1d4a91}
+  .btn.ghost{background:transparent;color:var(--ink);box-shadow:none;border:2px solid var(--line)}
+  .btn.dark{background:#1b1f1c;color:var(--gold);box-shadow:0 4px 0 #000}
+  .btn.small{padding:8px 12px;font-size:.9rem;border-radius:10px}
+
+  /* ---------- Panels ---------- */
+  .panel{background:var(--card);color:var(--ink);border-radius:20px;padding:24px;margin-top:20px;box-shadow:0 10px 0 rgba(0,0,0,.25);position:relative}
+  .panel h2,.modalcard h2{font-family:var(--display);font-weight:400;font-size:2.2rem;letter-spacing:1px;margin:0 0 6px;line-height:1}
+  .panel h3{margin:18px 0 8px}
+  .lead{font-size:1.05rem}
+  .hint{font-size:.85rem;color:var(--muted)}
+  .rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:16px 0}
+  .rule{background:#fff;border-radius:14px;padding:14px;border:1px solid var(--line)}
+  .rule .big{font-size:1.6rem}
+  .rule b{display:block}
+  .field{display:flex;flex-direction:column;gap:6px;max-width:360px}
+  .field input,.field select,textarea{padding:12px;border-radius:10px;border:2px solid var(--line);background:#fff;color:var(--ink)}
+  .stationactions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;align-items:center}
+  .introgrid{display:grid;grid-template-columns:1.4fr 1fr;gap:20px;align-items:start}
+  @media (max-width:760px){.introgrid{grid-template-columns:1fr}}
+  .besttable{width:100%;border-collapse:collapse;font-size:.9rem}
+  .besttable th,.besttable td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+  .besttable th{font-size:.72rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+  .besttable tr.me td{background:#fff3cf;font-weight:800}
+  .boxed{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px}
+
+  /* ---------- Cutscene ---------- */
+  .cutscene{position:fixed;inset:0;z-index:80;display:grid;place-items:end center;padding:16px;background:radial-gradient(ellipse at 50% 20%,rgba(30,40,60,.55),rgba(0,0,0,.92))}
+  .csbox{width:min(760px,100%);display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:end;margin-bottom:4vh}
+  @media (max-width:600px){.csbox{grid-template-columns:1fr;justify-items:center}}
+  .csav{width:150px;height:150px;border-radius:24px;background:linear-gradient(160deg,#f39c12,#a35f00);border:4px solid #fff;overflow:hidden}
+  .csav svg{width:100%;height:100%}
+  .csdlg{background:var(--card);color:var(--ink);border-radius:18px;padding:18px 20px;border:4px solid var(--gold);min-height:150px;display:flex;flex-direction:column;width:100%}
+  .csname{font-family:var(--display);font-size:1.5rem;letter-spacing:1px;color:#a35f00}
+  .cstext{font-size:1.12rem;flex:1;min-height:3.4em}
+  .csbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+  .csdots{display:flex;gap:6px;align-items:center;margin-right:auto}
+  .csdots i{width:9px;height:9px;border-radius:50%;background:#d8d2bf}.csdots i.on{background:var(--gold)}
+
+  /* ---------- Karte ---------- */
+  .maphead{display:flex;justify-content:space-between;align-items:end;gap:10px;flex-wrap:wrap;margin-top:22px}
+  .maphead h2{font-family:var(--display);font-weight:400;font-size:2rem;letter-spacing:1px;margin:0;color:#fff}
+  .half{display:inline-block;font-family:var(--display);letter-spacing:2px;background:var(--gold);color:#1b1f1c;border-radius:8px;padding:0 8px;margin-right:8px;font-size:1.2rem;vertical-align:middle}
+  .map{position:relative;margin-top:10px;border-radius:20px;overflow:hidden;box-shadow:0 10px 0 rgba(0,0,0,.3)}
+  .map svg.base{display:block;width:100%;height:auto}
+  .pin{position:absolute;transform:translate(-50%,-50%);border:0;background:none;cursor:pointer;padding:0;display:flex;flex-direction:column;align-items:center;gap:3px}
+  .pin .dot{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;border:4px solid #fff;box-shadow:0 6px 14px rgba(0,0,0,.45);background:linear-gradient(160deg,var(--c1),var(--c2));overflow:hidden;transition:transform .15s;position:relative}
+  .pin .dot svg{width:54px;height:54px;margin-top:12px}
+  .pin:hover .dot{transform:scale(1.12)}
+  .pin .lbl{background:rgba(10,14,12,.9);color:#fff;font-size:.72rem;font-weight:800;padding:2px 8px;border-radius:999px;white-space:nowrap}
+  .pin .nr{position:absolute;top:-6px;left:-6px;width:24px;height:24px;border-radius:50%;background:var(--gold);color:#1b1f1c;font-weight:800;font-size:.78rem;display:grid;place-items:center;border:2px solid #fff;z-index:2}
+  .pin.done .dot{border-color:var(--ok)}
+  .pin.done .nr{background:var(--ok);color:#fff}
+  .pin:not(.done) .dot{animation:pulse 2.4s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 6px 14px rgba(0,0,0,.45),0 0 0 0 rgba(245,197,66,.7)}60%{box-shadow:0 6px 14px rgba(0,0,0,.45),0 0 0 14px rgba(245,197,66,0)}}
+  .pin.final .dot{width:64px;height:64px;background:#1b1f1c;border-color:var(--gold)}
+  .pin.final.ready .dot{background:var(--gold);animation:pulse 1.2s infinite}
+  .pin.final .dot svg{margin:0;width:70%;height:70%}
+  @media (max-width:700px){.pin .lbl{display:none}.pin .dot{width:34px;height:34px;border-width:3px}.pin .dot svg{width:36px;height:36px;margin-top:7px}.pin .nr{width:19px;height:19px;font-size:.66rem;top:-5px;left:-5px}.pin.final .dot{width:44px;height:44px}}
+  .stationlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-top:14px}
+  .stationlist button{display:flex;align-items:center;gap:10px;text-align:left;border:0;border-radius:12px;padding:8px 12px;background:rgba(251,248,239,.95);color:var(--ink);cursor:pointer;font-weight:600}
+  .stationlist button .n{width:26px;height:26px;border-radius:50%;background:var(--gold);display:grid;place-items:center;font-weight:800;font-size:.8rem;flex:0 0 auto}
+  .stationlist button.done .n{background:var(--ok);color:#fff}
+  .stationlist button small{display:block;font-weight:400;color:var(--muted);font-size:.78rem}
+  .stationlist button.finalbtn{background:#1b1f1c;color:var(--gold)}
+  .stationlist button.finalbtn small{color:#bbb}
+
+  /* ---------- Station ---------- */
+  .scene{display:grid;grid-template-columns:190px 1fr;gap:22px;align-items:start}
+  @media (max-width:700px){.scene{grid-template-columns:1fr}.portrait{max-width:170px;margin:0 auto}}
+  .portrait{position:relative;border-radius:18px;padding:12px 12px 34px;background:linear-gradient(160deg,var(--c1),var(--c2));text-align:center}
+  .portrait .av{width:100%;height:auto;max-width:166px}
+  .portrait .pbadge{position:absolute;right:-10px;bottom:-10px;width:60px;height:60px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+  .portrait .pbadge svg{width:38px;height:38px}
+  .nameplate{margin-top:6px;font-family:var(--display);font-size:1.2rem;overflow-wrap:anywhere;hyphens:auto;letter-spacing:1px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.25);line-height:1.1}
+  .meta{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px}
+  .pill{font-size:.76rem;font-weight:800;padding:4px 10px;border-radius:999px;background:#ece7d8;color:#444}
+  .pill.anbieten{background:#ffe2bd;color:#7a4300}
+  .pill.teilnahme{background:#d5e6fc;color:#123f78}
+  .pill.werbung{background:#efdafb;color:#5b1f7a}
+  .pill.gemischt{background:#dff3ec;color:#0f5e48}
+  .pill.behoerde{background:#e3e7ee;color:#2c3e50}
+  .pill.type{background:#1b1f1c;color:var(--gold)}
+  .bubble{position:relative;background:#fff;border:2px solid var(--line);border-radius:18px;padding:14px 16px;font-size:1.03rem}
+  .bubble::before{content:"";position:absolute;left:-12px;top:30px;width:20px;height:20px;background:#fff;border-left:2px solid var(--line);border-bottom:2px solid var(--line);transform:rotate(45deg)}
+  @media (max-width:700px){.bubble::before{display:none}}
+  .who{font-size:.8rem;color:var(--muted);margin-bottom:4px}
+  .task{margin-top:16px;padding:14px 16px;border-radius:14px;background:#1b1f1c;color:#fff;display:flex;gap:10px;align-items:flex-start}
+  .task b{color:var(--gold)}
+  .puzzle{margin-top:16px}
+  .puzzle.locked{pointer-events:none;opacity:.8}
+  .feedback{margin-top:18px;padding:16px;border-radius:14px;display:none;gap:16px;align-items:flex-start}
+  .feedback.show{display:flex}
+  .feedback.ok{background:var(--ok-bg);border:2px solid var(--ok)}
+  .feedback.bad{background:var(--bad-bg);border:2px solid var(--bad);animation:shake .4s}
+  .feedback.var{background:#e8f0fd;border:2px solid var(--blue)}
+  @keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+  .refcard{flex:0 0 auto;width:50px;animation:pull .5s cubic-bezier(.2,1.6,.4,1)}
+  @keyframes pull{from{transform:translateY(30px) rotate(-25deg);opacity:0}to{transform:none;opacity:1}}
+  .feedback h3{margin:0 0 6px;font-size:1.08rem}
+  .feedback p{margin:0 0 8px}
+  .letter{display:inline-grid;place-items:center;width:38px;height:46px;border-radius:8px;background:#0b0d0c;color:var(--led);font-family:var(--display);font-size:1.9rem;vertical-align:middle;margin-left:6px;text-shadow:0 0 10px rgba(255,182,39,.8)}
+  .source{font-size:.86rem;color:var(--muted);border-top:1px dashed #b9c9bd;padding-top:8px;margin-top:6px!important}
+  .source a{color:inherit;font-weight:600}
+  .points{display:inline-block;background:var(--ink);color:var(--gold);font-weight:800;border-radius:8px;padding:2px 8px;margin-left:6px;font-size:.9rem}
+  .stickergot{display:flex;align-items:center;gap:8px;background:#fff;border:2px dashed var(--gold);border-radius:12px;padding:8px 12px;font-weight:600}
+
+  /* Ausweiskontrolle */
+  .daybar,.netbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:#fff3cf;border:2px solid #ead08a;border-radius:12px;padding:8px 14px;font-weight:700}
+  .netbar{background:#0f1a24;border-color:#1f3a52;color:#7fd4ff}
+  .customer{display:grid;grid-template-columns:120px 1fr;gap:16px;align-items:center;margin-top:14px;background:#fff;border:2px solid var(--line);border-radius:16px;padding:14px;animation:slidein .35s}
+  @keyframes slidein{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+  @media (max-width:560px){.customer{grid-template-columns:1fr;justify-items:center;text-align:center}}
+  .customer .av{width:110px;height:110px;border-radius:50%;background:#e6eef7}
+  .idcard{display:flex;gap:12px;align-items:center;background:linear-gradient(135deg,#fde7e7,#f7d0d0);border:1px solid #e1a9a9;border-radius:12px;padding:10px 12px;max-width:340px;margin-top:8px;text-align:left}
+  .idcard .ph{width:54px;height:66px;border-radius:6px;background:#fff;overflow:hidden;flex:0 0 auto}
+  .idcard .ph svg{width:70px;height:70px;margin:-2px 0 0 -8px}
+  .idcard .k{font-size:.65rem;letter-spacing:1px;color:#7c4141;text-transform:uppercase}
+  .idcard .v{font-weight:800;font-family:ui-monospace,Consolas,monospace}
+  .idcard .flag{font-size:.7rem;font-weight:800;color:#b3261e;letter-spacing:1px}
+  .progressdots{display:flex;gap:6px}
+  .progressdots i{width:12px;height:12px;border-radius:50%;background:#d8d2bf;display:block}
+  .progressdots i.ok{background:var(--ok)}.progressdots i.now{background:var(--gold)}
+  .netbar .progressdots i{background:#24394d}.netbar .progressdots i.ok{background:#36d27c}.netbar .progressdots i.now{background:#7fd4ff}
+
+  /* Sortieren */
+  .tray{display:flex;flex-wrap:wrap;gap:8px;min-height:54px;padding:10px;border-radius:14px;background:#efeadc;border:2px dashed #cfc6aa}
+  .chip{border:2px solid var(--line);background:#fff;color:var(--ink);border-radius:12px;padding:8px 12px;cursor:grab;font-weight:600;text-align:left;max-width:100%}
+  .chip.sel{border-color:var(--gold);box-shadow:0 0 0 3px rgba(245,197,66,.5)}
+  .bins{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+  @media (max-width:560px){.bins{grid-template-columns:1fr}}
+  .bin{border-radius:16px;padding:12px;min-height:150px;border:3px solid transparent;cursor:pointer;display:flex;flex-direction:column;gap:8px}
+  .bin h4{margin:0;font-family:var(--display);font-weight:400;font-size:1.5rem;letter-spacing:1px}
+  .bin.a{background:#ffe9cc;border-color:#f3c98f}
+  .bin.t{background:#dceafd;border-color:#a8c8f2}
+  .bin.over{outline:3px dashed var(--ink)}
+
+  /* Website */
+  .browser{border-radius:14px;overflow:hidden;border:2px solid #333;background:#111;color:#fff;max-width:620px}
+  .browser .bar{display:flex;align-items:center;gap:6px;background:#2b2b2b;padding:8px 10px}
+  .browser .bar i{width:10px;height:10px;border-radius:50%;background:#ff5f57;display:block}
+  .browser .bar i:nth-child(2){background:#febc2e}.browser .bar i:nth-child(3){background:#28c840}
+  .browser .url{flex:1;background:#1b1b1b;border-radius:6px;padding:4px 10px;font-size:.8rem;color:#bbb;font-family:ui-monospace,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .site{position:relative;padding:16px;background:linear-gradient(135deg,#2a0845,#6441a5)}
+  .site .logo{font-family:var(--display);font-size:2rem;letter-spacing:2px;color:#ffe44d}
+  .site .hero2{margin:10px 0;padding:12px;border-radius:10px;background:rgba(255,255,255,.12)}
+  .site .odds{display:flex;gap:8px;flex-wrap:wrap}
+  .site .odds span{background:#ffe44d;color:#2a0845;font-weight:800;border-radius:8px;padding:6px 10px;font-size:.85rem}
+  .site .foot{font-size:.72rem;color:#d8c9f2;margin-top:10px}
+  .stamp{position:absolute;right:12px;top:12px;transform:rotate(12deg);border:3px solid #ff4d4d;color:#ff4d4d;font-family:var(--display);font-size:1.3rem;padding:0 8px;border-radius:6px;background:rgba(0,0,0,.25)}
+  .tools{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+  .reveal{background:#fff;border:2px solid var(--line);border-left:6px solid var(--blue);border-radius:10px;padding:10px 12px;margin-top:8px;animation:pull .4s}
+
+  /* Urteile */
+  .judges{display:grid;gap:12px}
+  .judge{background:#fff;border:2px solid var(--line);border-radius:14px;padding:12px 14px}
+  .judge.wrong,.q.wrong{border-color:var(--bad)!important;background:var(--bad-bg)!important}
+  .judge .t{font-weight:800}
+  .opts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .toggle{border:2px solid var(--line);background:#f6f3ea;color:var(--ink);border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:700}
+  .toggle[aria-pressed="true"].z{background:var(--ok);border-color:var(--ok);color:#fff}
+  .toggle[aria-pressed="true"].u{background:var(--bad);border-color:var(--bad);color:#fff}
+  .toggle[aria-pressed="true"].q{background:var(--blue);border-color:var(--blue);color:#fff}
+
+  /* Stories */
+  .stories{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+  .story{border-radius:22px;overflow:hidden;background:#000;color:#fff;border:3px solid #222}
+  .story .sv{position:relative;aspect-ratio:9/12;padding:14px;display:flex;flex-direction:column;justify-content:space-between}
+  .story .sv.s1{background:linear-gradient(160deg,#ff512f,#dd2476)}
+  .story .sv.s2{background:linear-gradient(160deg,#1d976c,#2c3e50)}
+  .story .user{display:flex;align-items:center;gap:8px;font-weight:800;font-size:.85rem}
+  .story .user .mini{width:30px;height:30px;border-radius:50%;background:#fff;overflow:hidden}
+  .story .user .mini svg{width:40px;height:40px;margin:-2px 0 0 -5px}
+  .story .bars{display:flex;gap:4px;margin-bottom:8px}.story .bars i{flex:1;height:3px;background:rgba(255,255,255,.5);border-radius:2px}
+  .story .smsg{font-size:1.1rem;font-weight:800;text-shadow:0 2px 6px rgba(0,0,0,.4)}
+  .story .code{display:inline-block;background:#fff;color:#dd2476;padding:6px 10px;border-radius:8px;font-family:ui-monospace,monospace;font-weight:800;margin-top:8px}
+  .story .judgebox{background:#fff;color:var(--ink);padding:10px}
+
+  /* Werbung */
+  .phone{position:relative;width:min(330px,100%);margin:0 auto;border-radius:34px;background:#111;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .phone .screen{position:relative;border-radius:24px;overflow:hidden;background:#87c9f2}
+  .phone .screen svg{display:block;width:100%;height:auto}
+  .hot{position:absolute;border:3px dashed transparent;background:transparent;border-radius:10px;cursor:pointer;color:transparent;padding:0;overflow:hidden}
+  .hot:hover{border-color:rgba(255,255,255,.9)}
+  .hot.mark{border:3px solid var(--bad);background:rgba(210,59,48,.18);overflow:visible}
+  .hot.mark::after{content:"!";position:absolute;right:-10px;top:-10px;width:22px;height:22px;border-radius:50%;background:var(--bad);color:#fff;font-weight:800;display:grid;place-items:center;font-size:.85rem}
+  .counter{font-weight:800;text-align:center;margin-top:10px}
+
+  /* Chats */
+  .chat{background:#e9e4d6;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px;max-height:430px;overflow:auto}
+  .chat.wa{background:#e5ddd5 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Ccircle cx='20' cy='20' r='1.5' fill='%23cfc4b8'/%3E%3C/svg%3E");max-width:560px}
+  .chathead{display:flex;align-items:center;gap:10px;background:#075e54;color:#fff;border-radius:16px 16px 0 0;padding:10px 14px;max-width:560px;font-weight:800}
+  .chathead + .chat{border-radius:0 0 16px 16px}
+  .msg{max-width:82%;padding:9px 13px;border-radius:16px;line-height:1.4;animation:pull .35s}
+  .msg.them{background:#fff;align-self:flex-start;border-bottom-left-radius:4px}
+  .msg.me{background:#2f6fd0;color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+  .msg.wame{background:#dcf8c6;color:var(--ink);align-self:flex-end;border-bottom-right-radius:4px}
+  .msg.sys{align-self:center;background:#1b1f1c;color:var(--gold);font-size:.82rem;font-weight:700;border-radius:8px}
+  .msg .from{display:block;font-size:.7rem;font-weight:800;opacity:.7}
+  .msg .time{display:block;text-align:right;font-size:.65rem;opacity:.55}
+  .replies{display:grid;gap:8px;margin-top:12px}
+  .replies button{text-align:left;border:2px solid var(--blue);background:#fff;color:var(--ink);border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:600}
+  .replies button:hover{background:#eef3fd}
+  .typing{align-self:flex-start;background:#fff;border-radius:16px;padding:10px 14px}
+  .typing i{display:inline-block;width:6px;height:6px;border-radius:50%;background:#999;margin:0 2px;animation:blink 1s infinite}
+  .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+  @keyframes blink{50%{opacity:.2}}
+
+  /* Netzsperre */
+  .packet{margin-top:14px;border-radius:16px;overflow:hidden;border:2px solid #1f3a52;background:#0f1a24;color:#dfefff;animation:slidein .35s;max-width:640px}
+  .packet .ph{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#152738}
+  .packet .plogo{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-size:1.5rem;flex:0 0 auto}
+  .packet .purl{font-family:ui-monospace,Consolas,monospace;font-weight:800;font-size:1.05rem;word-break:break-all}
+  .packet dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;margin:0;padding:12px 14px}
+  .packet dt{color:#7fa9c9;font-size:.8rem;text-transform:uppercase;letter-spacing:1px;padding-top:2px}
+  .packet dd{margin:0;font-weight:600}
+  .timer{height:8px;border-radius:99px;background:#24394d;overflow:hidden;margin-top:10px;max-width:640px}
+  .timer i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#36d27c,#f5c542,#d23b30);background-size:640px 100%;transition:width .1s linear}
+
+  /* Paragraphen-Puzzle */
+  .matchgrid{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
+  @media (max-width:700px){.matchgrid{grid-template-columns:1fr}}
+  .mcase{display:block;width:100%;text-align:left;background:#fff;border:2px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer;color:var(--ink)}
+  .mcase.sel{border-color:var(--gold);box-shadow:0 0 0 3px rgba(245,197,66,.5)}
+  .mcase.wrong{border-color:var(--bad);background:var(--bad-bg)}
+  .mcase .asg{display:inline-block;margin-top:6px;font-size:.8rem;font-weight:800;border-radius:8px;padding:2px 8px;background:#ece7d8;color:#777}
+  .mcase .asg.set{background:#1b1f1c;color:var(--gold)}
+  .marts{display:grid;gap:8px;align-content:start}
+  .mart{text-align:left;border:2px solid #b38a17;background:#fff8e1;border-radius:12px;padding:10px 12px;cursor:pointer;color:var(--ink)}
+  .mart b{display:block;font-family:var(--display);font-size:1.3rem;letter-spacing:1px;font-weight:400}
+  .mart:disabled{opacity:.5;cursor:default}
+  .colhead{font-weight:800;margin-bottom:8px;font-size:.85rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+
+  /* Zeitstrahl */
+  .tl{list-style:none;padding:0 0 0 28px;margin:0;position:relative}
+  .tl::before{content:"";position:absolute;left:10px;top:6px;bottom:6px;width:4px;border-radius:4px;background:linear-gradient(#f5c542,#1f9a55)}
+  .tlitem{position:relative;display:flex;align-items:center;gap:10px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:grab}
+  .tlitem::before{content:"";position:absolute;left:-24px;width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid #1b1f1c}
+  .tlitem.wrong{border-color:var(--bad);background:var(--bad-bg)}
+  .tlitem.drag{opacity:.4}
+  .tlpos{font-family:var(--display);font-size:1.4rem;color:var(--muted);width:20px}
+  .tltext{flex:1}
+  .tlbtns{display:flex;flex-direction:column;gap:2px}
+  .mv{border:1px solid var(--line);background:#f6f3ea;border-radius:6px;cursor:pointer;width:32px;height:22px;font-size:.7rem;line-height:1}
+  .mv:disabled{opacity:.3}
+  .year{font-family:var(--display);font-size:1.6rem;color:#fff;background:var(--ok);border-radius:8px;padding:0 8px;animation:pop .5s}
+
+  /* Quiz */
+  .quiz .q{background:#fff;border:2px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+  .quiz .q .t{font-weight:800;margin-bottom:8px}
+  .quiz .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+  .mic{display:flex;gap:10px;align-items:center;margin-bottom:6px;font-weight:700;color:var(--muted);font-size:.85rem}
+
+  /* ---------- Code-Schloss ---------- */
+  .lockwrap{display:grid;grid-template-columns:160px 1fr;gap:24px;align-items:center}
+  @media (max-width:700px){.lockwrap{grid-template-columns:1fr;justify-items:center;text-align:center}}
+  .padlock .shackle{transition:transform .6s cubic-bezier(.3,1.6,.5,1);transform-origin:70% 100%}
+  .padlock.open .shackle{transform:translateY(-14px) rotate(25deg)}
+  .codeinputs{display:flex;gap:5px;flex-wrap:wrap;margin:12px 0}
+  .codeinputs input{width:40px;height:54px;border-radius:10px;border:2px solid var(--line);text-align:center;text-transform:uppercase;font-family:var(--display);font-size:2rem;background:#fff;color:var(--ink);padding:0}
+  .codeinputs input.gap{margin-left:10px}
+  @media (max-width:520px){.codeinputs{gap:3px}.codeinputs input{width:calc((100% - 50px)/12);min-width:22px;height:44px;font-size:1.4rem}.codeinputs input.gap{margin-left:6px}}
+
+  /* ---------- Penaltyschiessen ---------- */
+  .pscore{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0 10px}
+  .pscore i{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#e6e1d1;font-style:normal;font-weight:800}
+  .pscore i.g{background:var(--ok);color:#fff}.pscore i.m{background:var(--bad);color:#fff}.pscore i.now{outline:3px solid var(--gold)}
+  .pq{font-size:1.15rem;font-weight:800;background:#1b1f1c;color:#fff;border-radius:14px;padding:12px 16px}
+  .pbox{position:relative;margin-top:12px;border-radius:18px;overflow:hidden;aspect-ratio:16/9;max-height:440px;width:100%;
+    background:linear-gradient(#0f2b49 0 18%,#2c3e50 18% 22%,transparent 22%),repeating-linear-gradient(90deg,#2f9152 0 60px,#2a8549 60px 120px);user-select:none}
+  .pbox .goal{position:absolute;left:8%;right:8%;top:8%;height:52%}
+  .pbox .goal svg{width:100%;height:100%;display:block}
+  .zone{position:absolute;top:11%;height:46%;width:25.5%;border:0;background:transparent;cursor:pointer;border-radius:8px;z-index:3}
+  .zone:hover{background:rgba(255,255,255,.14)}
+  .zone .zb{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:42px;height:42px;border-radius:50%;background:rgba(0,0,0,.55);border:3px solid #fff;color:#fff;font-family:var(--display);font-size:1.5rem;display:grid;place-items:center}
+  .zone:disabled{cursor:default}.zone:disabled:hover{background:transparent}
+  .keeper{position:absolute;left:50%;top:22%;width:13%;transform:translate(-50%,0);transition:left .55s cubic-bezier(.2,.8,.3,1),transform .55s cubic-bezier(.2,.8,.3,1);z-index:2;pointer-events:none}
+  .keeper svg{width:100%;height:auto;display:block}
+  .pball{position:absolute;left:50%;top:85%;width:6.5%;transform:translate(-50%,-50%);transition:left .5s ease-out,top .5s ease-out,transform .5s ease-out;z-index:4;pointer-events:none}
+  .pball svg{width:100%;height:auto;display:block}
+  .spot{position:absolute;left:50%;top:85%;width:1.6%;aspect-ratio:1;border-radius:50%;background:#fff;transform:translate(-50%,-50%)}
+  .pmsg{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;z-index:5}
+  .pmsg span{font-family:var(--display);font-size:clamp(3rem,11vw,6.5rem);color:#fff;text-shadow:0 6px 0 rgba(0,0,0,.35);animation:pop .5s cubic-bezier(.2,1.6,.4,1);letter-spacing:3px}
+  .pmsg.goal span{color:var(--gold)}
+  .pans{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+  @media (max-width:700px){.pans{grid-template-columns:1fr}}
+  .pans button{text-align:left;border:2px solid var(--line);background:#fff;color:var(--ink);border-radius:12px;padding:10px 12px;cursor:pointer;font-weight:600}
+  .pans button b{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#1b1f1c;color:var(--gold);font-family:var(--display);font-size:1.2rem;margin-right:6px;font-weight:400}
+  .pans button:hover{border-color:var(--gold)}
+  .pans button:disabled{cursor:default;opacity:.6}
+  .pans button.right{border-color:var(--ok);background:var(--ok-bg);opacity:1}
+  .pans button.picked.wrongpick{border-color:var(--bad);background:var(--bad-bg);opacity:1}
+
+  /* ---------- Finale / Sieg ---------- */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:14px 0}
+  .stat{background:#0b0d0c;border-radius:12px;padding:12px;text-align:center}
+  .stat .led span{font-size:2.1rem}
+  .learned{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;padding:0;list-style:none}
+  .learned li{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+  .learned b{display:block;margin-bottom:2px}
+  ul.sources{padding-left:18px}
+  ul.sources li{margin-bottom:6px}
+  ul.sources a{color:var(--ink)}
+  .trophy{width:130px;display:block;margin:0 auto 6px;animation:pop .7s cubic-bezier(.2,1.6,.4,1)}
+  @keyframes pop{from{transform:scale(.2) rotate(-20deg);opacity:0}to{transform:none;opacity:1}}
+  .center{text-align:center}
+  .stars{display:flex;gap:4px}
+  .stars button{border:0;background:none;font-size:1.8rem;cursor:pointer;color:#cfc8b3;padding:0 2px}
+  .stars button.on{color:var(--gold)}
+  select{max-width:100%;width:100%}
+  .fbform{grid-template-columns:minmax(0,1fr)}
+  .fbform{display:grid;gap:14px;background:#fff;border:2px solid var(--line);border-radius:16px;padding:16px}
+  textarea{width:100%;min-height:90px}
+
+  /* ---------- Modal, Album, Lehrer ---------- */
+  .modal{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.7);display:grid;place-items:center;padding:16px;overflow:auto}
+  .modalcard{position:relative;background:var(--card);color:var(--ink);border-radius:20px;width:min(980px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column;overflow:hidden;animation:pop .35s}
+  .modalscroll{overflow:auto;padding:24px;-webkit-overflow-scrolling:touch}
+  .modalx{position:absolute;top:10px;right:10px;border:0;background:#1b1f1c;color:#fff;border-radius:50%;width:38px;height:38px;cursor:pointer;font-size:1rem;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+  #modalBody > h2:first-child{padding-right:44px}
+  .album{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;margin-top:14px}
+  .sticker{position:relative;border-radius:14px;overflow:hidden;background:#fff;border:3px solid #fff;box-shadow:0 4px 0 rgba(0,0,0,.15),0 0 0 1px var(--line);min-height:250px;display:flex;flex-direction:column}
+  .sticker .simg{position:relative;height:120px;background:linear-gradient(160deg,var(--c1),var(--c2));display:grid;place-items:end center;overflow:hidden}
+  .sticker .simg svg{width:110px;height:110px;margin-bottom:-6px}
+  .sticker .snr{position:absolute;left:8px;top:6px;font-family:var(--display);font-size:1.6rem;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.3)}
+  .sticker .semoji{position:absolute;right:8px;top:6px;font-size:1.5rem}
+  .sticker .sbody{padding:10px 12px;flex:1}
+  .sticker .stitle{font-family:var(--display);font-size:1.35rem;letter-spacing:1px;line-height:1}
+  .sticker .sfact{font-size:.85rem;margin-top:4px}
+  .sticker.locked{background:#e8e3d3;border-style:dashed;border-color:#c9bfa5;box-shadow:none}
+  .sticker.locked .simg{background:#d6cfba}
+  .sticker.locked .simg svg{filter:brightness(0) opacity(.18)}
+  .sticker.locked .stitle,.sticker.locked .sfact{color:#a59c84}
+  .sticker::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.55) 45%,transparent 60%);transform:translateX(-100%);pointer-events:none}
+  .sticker.shine::after{animation:shine 1.4s .2s}
+  @keyframes shine{to{transform:translateX(100%)}}
+  .keytable{width:100%;border-collapse:collapse;font-size:.88rem}
+  .keytable th,.keytable td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+  .keytable th{background:#1b1f1c;color:var(--gold);font-weight:800}
+  .keytable tr:nth-child(even) td{background:#fff}
+  .leit{display:grid;gap:10px}
+  .leit div{background:#fff;border:1px solid var(--line);border-left:6px solid var(--gold);border-radius:10px;padding:10px 14px}
+
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0b0d0c;color:var(--gold);padding:10px 18px;border-radius:999px;font-weight:800;z-index:90;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:pull .3s;max-width:calc(100% - 32px);text-align:center}
+  #confetti{position:fixed;inset:0;pointer-events:none;z-index:85}
+  footer{margin-top:40px;font-size:.85rem;color:#b8cabc;text-align:center}
+  footer a,footer button.link{color:#e5efe7}
+  button.link{background:none;border:0;text-decoration:underline;cursor:pointer;padding:0}
+
+  /* ---------- Urkunde (nur Druck) ---------- */
+  #cert{display:none}
+  @media print{
+    @page{size:A4 landscape;margin:12mm}
+    html,body{background:#fff!important}
+    body::before{display:none}
+    .wrap,#confetti,#modal,#cutscene,.toast{display:none!important}
+    #cert{display:block!important;color:#17201b;font-family:var(--body);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+  .certin{border:10px double #b38a17;border-radius:12px;padding:28px 36px;text-align:center;position:relative;background:#fffdf5}
+  .certin h1{font-family:var(--display);font-weight:400;font-size:3.4rem;margin:6px 0 0;letter-spacing:3px}
+  .certin .team{font-family:var(--display);font-size:3rem;color:#1f6b3a;letter-spacing:2px;margin:4px 0}
+  .certin .row{display:flex;justify-content:center;gap:28px;margin:14px 0;font-weight:800}
+  .certin .sig{display:flex;justify-content:space-between;margin-top:30px;font-size:.85rem}
+  .certin .sig span{border-top:1px solid #333;padding-top:4px;min-width:200px}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+
+<div class="wrap">
+  <!-- ===== Stadion-Header (eigene Illustration) ===== -->
+  <header class="hero">
+    <svg viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Fussballstadion bei Nacht mit Flutlicht">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#050b18"/><stop offset="1" stop-color="#14304a"/></linearGradient>
+        <linearGradient id="beamG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffbe0" stop-opacity=".55"/><stop offset="1" stop-color="#fffbe0" stop-opacity="0"/></linearGradient>
+        <linearGradient id="grass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f9152"/><stop offset="1" stop-color="#1a5e33"/></linearGradient>
+        <radialGradient id="emer"><stop offset="0" stop-color="#ff3b30" stop-opacity=".7"/><stop offset="1" stop-color="#ff3b30" stop-opacity="0"/></radialGradient>
+        <pattern id="crowd" width="14" height="12" patternUnits="userSpaceOnUse"><rect width="14" height="12" fill="#1a2334"/><circle cx="4" cy="5" r="2.6" fill="#c0392b"/><circle cx="11" cy="8" r="2.6" fill="#f2f2f2"/></pattern>
+      </defs>
+      <rect width="1000" height="300" fill="url(#sky)"/>
+      <g fill="#fff" opacity=".7"><circle cx="120" cy="40" r="1.4"/><circle cx="300" cy="22" r="1"/><circle cx="520" cy="35" r="1.2"/><circle cx="700" cy="18" r="1"/><circle cx="880" cy="44" r="1.4"/></g>
+      <g class="beam"><polygon points="95,40 0,300 260,300" fill="url(#beamG)"/></g>
+      <g class="beam b2"><polygon points="905,40 740,300 1000,300" fill="url(#beamG)"/></g>
+      <g fill="#c9d1d8"><rect x="90" y="40" width="10" height="150"/><rect x="900" y="40" width="10" height="150"/></g>
+      <g fill="#fffbe0" class="lamp" style="transition:opacity .4s"><rect x="66" y="22" width="58" height="22" rx="3"/><rect x="876" y="22" width="58" height="22" rx="3"/></g>
+      <path d="M0 140 Q500 85 1000 140 L1000 222 L0 222Z" fill="url(#crowd)"/>
+      <path d="M0 140 Q500 85 1000 140" stroke="#e9e9e9" stroke-width="5" fill="none"/>
+      <rect x="0" y="210" width="1000" height="14" fill="#c0392b"/>
+      <g fill="#fff" font-family="Bebas Neue, Impact, sans-serif" font-size="11" opacity=".85"><text x="40" y="221">FAIR PLAY</text><text x="220" y="221">SPIEL MIT KÖPFCHEN</text><text x="440" y="221">KEINE WETTEN UNTER 18</text><text x="660" y="221">FAIR PLAY</text><text x="840" y="221">SPIELERSCHUTZ</text></g>
+      <rect x="0" y="224" width="1000" height="76" fill="url(#grass)"/>
+      <ellipse cx="500" cy="268" rx="90" ry="20" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="3"/>
+      <line x1="500" y1="224" x2="500" y2="300" stroke="#fff" stroke-opacity=".6" stroke-width="3"/>
+      <g class="ball"><circle cx="500" cy="264" r="12" fill="#fff" stroke="#222" stroke-width="1.5"/><polygon points="500,257 506,261 504,268 496,268 494,261" fill="#222"/></g>
+      <g class="emergency"><circle cx="160" cy="150" r="120" fill="url(#emer)"/><circle cx="840" cy="150" r="120" fill="url(#emer)"/></g>
+    </svg>
+    <div class="title"><h1>⚽ ABPFIFF!</h1><div class="sub">Das Wett-Escape · Fussballwetten &amp; Recht in der Schweiz</div></div>
+  </header>
+
+  <!-- ===== Anzeigetafel ===== -->
+  <div class="board hidden" id="board" aria-label="Anzeigetafel">
+    <div class="led"><small>ZEIT</small><span id="clock">00:00</span></div>
+    <div class="led"><small>PUNKTE</small><span id="pts">0</span></div>
+    <div class="slots" id="slots" aria-label="Gesammelte Code-Buchstaben"></div>
+    <div class="boardbtns">
+      <button class="iconbtn" id="mapBtn" title="Stadionkarte" aria-label="Zur Stadionkarte">🗺️</button>
+      <button class="iconbtn" id="albumBtn" title="Sammelalbum" aria-label="Sammelalbum öffnen">🎴<span class="badge" id="albumCount">0</span></button>
+      <button class="iconbtn" id="crowdBtn" title="Stadionatmosphäre an/aus" aria-label="Stadionatmosphäre an oder aus">🏟️</button>
+      <button class="iconbtn" id="soundBtn" title="Soundeffekte an/aus" aria-label="Soundeffekte an oder aus">🔊</button>
+    </div>
+    <div class="ticker" aria-live="polite"><span id="ticker">+++ Willkommen im Stadion +++</span></div>
+  </div>
+
+  <!-- ===== Start ===== -->
+  <section id="intro" class="panel">
+    <div class="introgrid">
+      <div>
+        <h2>Nach dem Schlusspfiff eingeschlossen!</h2>
+        <p class="lead">Das Spiel ist vorbei, das Stadion leer – und plötzlich gehen alle Tore zu. Nur wer an zwölf Orten im Stadion die Regeln zu Fussballwetten in der Schweiz richtig anwendet, knackt den Code und kommt hinaus.</p>
+        <div class="rules">
+          <div class="rule"><div class="big">🗺️</div><b>12 Orte, 12 Rätsel</b>Kiosk, Fankurve, Serverraum, Schiri-Kabine … Reihenfolge frei.</div>
+          <div class="rule"><div class="big">⚖️</div><b>Anbieten oder teilnehmen?</b>Wer Wetten anbietet, verkauft oder bewirbt, hat andere Pflichten als wer mitspielt.</div>
+          <div class="rule"><div class="big">🟨📺</div><b>Gelbe Karten &amp; VAR</b>Fehler kosten Punkte. 3 VAR-Joker liefern Hinweise.</div>
+          <div class="rule"><div class="big">🎴⚽</div><b>Album &amp; Penaltys</b>Sammelt 12 Sticker – und verwandelt im Finale eure Penaltys.</div>
+        </div>
+        <div class="field">
+          <label for="teamName"><b>Euer Teamname</b></label>
+          <input id="teamName" maxlength="28" placeholder="z. B. Die Abseitsfalle" autocomplete="off">
+        </div>
+        <p class="hint">🎓 Schulprojekt · Kostenlos · Keine echten Wetten, keine Einsätze, keine Geld- oder Sachpreise · Alle Personen, Firmen, Websites und Fälle sind erfunden · Dauer ca. 30–45 Minuten.</p>
+        <div class="stationactions">
+          <button class="btn" id="startBtn">▶ Anpfiff – Spiel starten</button>
+          <button class="btn ghost hidden" id="resumeBtn">Weiterspielen</button>
+        </div>
+      </div>
+      <div>
+        <div class="boxed">
+          <b>🏆 Bestenliste (dieses Gerät)</b>
+          <div id="bestIntro" style="margin-top:8px"></div>
+        </div>
+        <div class="boxed" style="margin-top:12px">
+          <b>👩‍🏫 Für Lehrpersonen</b>
+          <p class="hint" style="margin:6px 0 10px">Lernziele, Leitfragen, Lösungsschlüssel aller Stationen und Quellen.</p>
+          <button class="btn dark small" id="teacherBtn">Lehrpersonen-Ansicht öffnen</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="mapView" class="hidden">
+    <div class="maphead"><h2 id="mapTitle">Stadionkarte</h2><span class="hint" style="color:#cfe0d3" id="progress"></span></div>
+    <div class="map" id="map"></div>
+    <div class="stationlist" id="stationlist"></div>
+  </section>
+  <section id="stationView" class="panel hidden" aria-live="polite"></section>
+  <section id="lockView" class="panel hidden"></section>
+  <section id="penaltyView" class="panel hidden"></section>
+  <section id="winView" class="panel hidden"></section>
+
+  <footer>
+    <p>Schulprojekt (VA) · Rechtsstand der Recherche: November 2026 · Keine Rechtsberatung · Alle Illustrationen selbst gezeichnet, alle Firmen, Personen und Websites erfunden (ausser Swisslos, Loterie Romande und Behörden)<br>
+    Hilfe bei Problemen mit Geldspielen: <a href="https://www.sos-spielsucht.ch" target="_blank" rel="noopener">SOS Spielsucht</a> · Gratis-Hotline 0800 040 080 · <button class="link" id="teacherBtn2">Für Lehrpersonen</button></p>
+  </footer>
+</div>
+
+<!-- Cutscene -->
+<div id="cutscene" class="cutscene hidden" role="dialog" aria-modal="true" aria-label="Einleitung">
+  <div class="csbox">
+    <div class="csav" id="csAv"></div>
+    <div class="csdlg">
+      <div class="csname" id="csName">Ruedi, Stadionwart</div>
+      <div class="cstext" id="csText" aria-live="polite"></div>
+      <div class="csbtns"><span class="csdots" id="csDots"></span><button class="btn ghost small" id="csSkip">Überspringen</button><button class="btn small" id="csNext">Weiter ▶</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="modalcard"><button class="modalx" id="modalClose" aria-label="Schliessen">✕</button><div id="modalBody" class="modalscroll"></div></div>
+</div>
+
+<!-- Urkunde (nur beim Drucken sichtbar) -->
+<div id="cert"></div>
+
+<script>
+/* =====================================================================
+   SPIELDATEN – Texte hier anpassen.
+   typ: idcheck | sort | website | adcheck | stories | chat | netblock |
+        judge | match | timeline | quiz
+   ===================================================================== */
+const SPIELTAG = new Date(2026, 2, 14);
+const SPIELTAG_TEXT = "Samstag, 14. März 2026";
+const RUEDI = {skin:"#e8b98f",hair:"#8a8a8a",style:"cap",shirt:"#e67e22",extra:["beard"]};
+
+const STATIONEN = [
+  { /* 1 */
+    id:"kiosk", ort:"Stadionkiosk", icon:"kiosk", farben:["#3fae6e","#1f6b40"], letter:"S",
+    person:"Frau Keller", avatar:{skin:"#f3d2b8",hair:"#b9b9b9",style:"bun",shirt:"#2e8b57",extra:["glasses","apron"]},
+    thema:"Mindestalter", rolle:"Anbieten", typ:"idcheck",
+    intro:"Uff, Matchtag! Ich muss kurz ins Lager. Kannst du den Verkauf übernehmen? Vor dem Kiosk stehen vier Leute, die einen Sporttip-Schein wollen.",
+    aufgabe:"Prüfe bei jeder Person den Ausweis und entscheide: <b>verkaufen</b> oder <b>ablehnen</b>? Heute ist der " + SPIELTAG_TEXT + ".",
+    kunden:[
+      {name:"Timo Brunner", geb:"02.09.2009", avatar:{skin:"#f1c7a5",hair:"#e0b25a",style:"short",shirt:"#3498db"}, sagt:"Einen Sporttip für das Cupspiel, bitte!"},
+      {name:"Selina Frei", geb:"13.03.2008", avatar:{skin:"#e8b98f",hair:"#2b1b10",style:"long",shirt:"#e67e22"}, sagt:"Hoi! Ich hatte gestern Geburtstag – endlich darf ich auch mal tippen."},
+      {name:"Kevin Ammann", geb:"15.03.2008", avatar:{skin:"#dba57c",hair:"#6b3e1f",style:"cap",shirt:"#9b59b6"}, sagt:"Morgen werde ich sowieso 18. Das passt doch schon, oder?"},
+      {name:"Ursula Rossi", geb:"21.07.1961", avatar:{skin:"#f3d2b8",hair:"#dcdcdc",style:"bob",shirt:"#c0392b",extra:["glasses"]}, sagt:"Wie jeden Samstag: ein Schein auf den FC Thun."}
+    ],
+    hinweis:"Für die Sportwetten von Swisslos und Loterie Romande gilt 18 Jahre. Rechne genau: Ist der 18. Geburtstag am Spieltag schon erreicht – oder erst morgen?",
+    erklaerung:"Für die Sportwetten von Swisslos und Loterie Romande gilt ein Mindestalter von 18 Jahren. Die Verkaufsstelle muss das Alter kontrollieren – wer verkauft, steht auf der Anbieterseite und trägt die Verantwortung. Dass das wichtig ist, zeigen Testkäufe der Gespa vom Juli 2026: In 44,5 % der Fälle gab es gar keine Alterskontrolle.",
+    quelle:"Art. 72 BGS; Merkblatt BJ «Schutz Minderjähriger»; Gespa-Medienmitteilung Testkäufe, 15.7.2026.",
+    link:"https://www.gespa.ch/download/pictures/e6/913p1yhtgkg69nu6pgzowrh0syu2b4/26-07-15_medienmitteilung_testkaeufe.pdf",
+    sticker:{titel:"18+ am Kiosk", emoji:"🔞", fakt:"Sporttip gibt es erst ab 18. Die Verkaufsstelle muss das Alter prüfen."},
+    loesung:"Timo (16): ablehnen · Selina (18 seit gestern): verkaufen · Kevin (18 erst morgen): ablehnen · Ursula: verkaufen"
+  },
+  { /* 2 */
+    id:"fankurve", ort:"Fankurve", icon:"flag", farben:["#e74c3c","#962d22"], letter:"C",
+    person:"Beni, Fanbetreuer", avatar:{skin:"#c98e62",hair:"#2b1b10",style:"short",shirt:"#c0392b",extra:["beard"]},
+    thema:"Anbieten vs. Teilnahme", rolle:"Gemischt", typ:"sort",
+    intro:"In der Kurve wird über Wetten diskutiert – und alle werfen alles durcheinander. Hilf mir, Ordnung zu schaffen: Wer <b>bietet an</b> (oder bewirbt), und wer <b>nimmt nur teil</b>?",
+    aufgabe:"Ziehe jede Karte in die richtige Kiste – oder tippe zuerst die Karte und dann die Kiste an.",
+    bins:{a:"Anbieten / Werben", t:"Teilnehmen"},
+    items:[
+      {t:"Swisslos stellt Quoten für die Super League online.", b:"a"},
+      {t:"Lara tippt online 10 Franken auf den FC Thun.", b:"t"},
+      {t:"Ein Kiosk verkauft Sporttip-Scheine.", b:"a"},
+      {t:"Ein Fan setzt am Swisslos-Automaten auf ein Unentschieden.", b:"t"},
+      {t:"Ein Influencer postet einen Bonuscode für eine Wettseite.", b:"a"},
+      {t:"Marco wettet über ein VPN auf einer ausländischen Seite.", b:"t"},
+      {t:"Eine Firma auf Malta betreibt eine Wettseite für Schweizer Kundschaft.", b:"a"},
+      {t:"Reto beantragt für sich selbst eine Spielsperre.", b:"t"}
+    ],
+    hinweis:"Stellt die Person ein Wettangebot bereit, verkauft es oder macht Werbung dafür? Dann «Anbieten». Setzt sie selbst Geld? Dann «Teilnehmen».",
+    erklaerung:"Das Geldspielgesetz nimmt vor allem die Anbieterseite in die Pflicht: Veranstalter, Verkaufsstellen und Werbende brauchen eine Bewilligung bzw. müssen Regeln einhalten. Wer illegale Online-Geldspiele anbietet oder dafür wirbt, macht sich strafbar – wer als Spielerin oder Spieler teilnimmt, nicht.",
+    quelle:"Art. 3, 130 und 131 BGS; Gespa, illegale Geldspielangebote.",
+    link:"https://gespa.ch/en/fighting-illegal-gambling/illegal-gambling-offers",
+    sticker:{titel:"Anbieten ≠ Teilnehmen", emoji:"⚖️", fakt:"Das Gesetz nimmt vor allem Anbietende und Werbende in die Pflicht."},
+    loesung:"Anbieten/Werben: Swisslos-Quoten, Kiosk, Influencer, Firma auf Malta · Teilnehmen: Lara, Fan am Automaten, Marco (VPN), Reto (Selbstsperre)"
+  },
+  { /* 3 */
+    id:"medien", ort:"Medienraum", icon:"globe", farben:["#3e6fb8","#1c3866"], letter:"H",
+    person:"Nina & Marco", avatar:{skin:"#e8b98f",hair:"#e3c16f",style:"long",shirt:"#1f3a68",extra:["tie"]},
+    thema:"Ausländische Onlineangebote", rolle:"Gemischt", typ:"website",
+    intro:"Im Medienraum flimmert eine Wettseite über den Bildschirm. Sie gehört Nina, die von Malta aus eine Firma führt. Ihr Kollege Marco aus Luzern hat dort gerade per VPN eine Wette platziert.",
+    aufgabe:"Untersuche die Website mit den Werkzeugen. Beurteile dann <b>beide</b> Handlungen.",
+    seite:{name:"BETBLITZ24", url:"https://www.betblitz24.example"},
+    tools:[
+      {label:"🔍 Impressum öffnen", text:"<b>Impressum:</b> BetBlitz Ltd., Valletta, Malta · Lizenz: Malta · <b>Schweizer Bewilligung: keine</b>"},
+      {label:"📋 Gespa-Sperrliste prüfen", text:"<b>Treffer:</b> betblitz24.example steht auf der Sperrliste für nicht bewilligte Online-Geldspiele. <i>(fiktives Beispiel)</i>"},
+      {label:"🌐 Zielgruppe ansehen", text:"Sprache Deutsch · Einzahlung in Franken · Werbung mit «Super League Spezialquoten» → richtet sich klar an die Schweiz."}
+    ],
+    fragen:[
+      {t:"Nina bietet die Wettseite Schweizer Kundinnen und Kunden an.", wer:"Anbieten", a:"u", labels:{z:"Zulässig",u:"Unzulässig"}},
+      {t:"Marco umgeht die Sperre per VPN und wettet dort. Macht er sich strafbar?", wer:"Teilnahme", a:"z", labels:{z:"Nein, nicht strafbar",u:"Ja, strafbar"}}
+    ],
+    hinweis:"Eine ausländische Lizenz zählt in der Schweiz nicht. Und: Das Gesetz bestraft das Anbieten illegaler Online-Geldspiele – aber nicht jede Handlung auf Spielerseite.",
+    erklaerung:"Wer in der Schweiz Online-Sportwetten anbietet, braucht eine Schweizer Bewilligung – eine Lizenz aus Malta genügt nicht. Solche Seiten kommen auf die Sperrliste und werden blockiert. Marco als Spieler macht sich nicht strafbar. Er verliert aber jeden Schweizer Spielerschutz, und Einsätze oder Gewinne können in einem Strafverfahren eingezogen werden.",
+    quelle:"Art. 21, 24, 86 ff. und 130 BGS; Merkblatt BJ «Illegale Onlineseiten».",
+    link:"https://www.bj.admin.ch/dam/bj/de/data/wirtschaft/geldspiele/merkblaetter/mb-illegale-onlineseiten-d.pdf",
+    sticker:{titel:"Auslandslizenz zählt nicht", emoji:"🌍", fakt:"Ohne Schweizer Bewilligung ist das Angebot illegal. Spielende sind nicht strafbar."},
+    loesung:"Nina (Anbieten): unzulässig · Marco (Teilnahme): nicht strafbar, aber Risiko der Einziehung"
+  },
+  { /* 4 */
+    id:"werbung", ort:"Werbebande", icon:"tv", farben:["#f39c4a","#b35a12"], letter:"L",
+    person:"Lena, Agentur «Kickboost»", avatar:{skin:"#f0c8a0",hair:"#d35400",style:"bob",shirt:"#e67e22",extra:["glasses"]},
+    thema:"Werbung", rolle:"Werbung", typ:"adcheck",
+    intro:"Hier ist mein Entwurf für die neue Handy-Kampagne von «TippTopp», einem bewilligten Anbieter (fiktiv). Morgen geht sie online. Findest du noch etwas, das rechtlich nicht geht?",
+    aufgabe:"Tippe alle Stellen in der Werbung an, die <b>unzulässig</b> sind. Achtung: Nicht alles ist ein Problem! Dann «Prüfung abschliessen».",
+    hinweis:"Werbung darf nicht irreführend oder aufdringlich sein und sich nicht an Minderjährige richten. Es gibt genau drei Probleme.",
+    erklaerung:"Auch bewilligte Anbieter dürfen nicht beliebig werben: Werbung darf weder aufdringlich noch irreführend sein und sich nicht an Minderjährige oder gesperrte Personen richten. Schulmotive und «Gspänli in der Pause» zielen auf Jugendliche, «100 % sicherer Gewinn» ist irreführend. Der Hinweis «ab 18», das Logo und der Hinweis auf Hilfe sind in Ordnung.",
+    quelle:"Art. 74 Abs. 1 und 2, Art. 131 Abs. 1 BGS; Merkblatt BJ «Schutz Minderjähriger».",
+    link:"https://www.bj.admin.ch/dam/bj/de/data/wirtschaft/geldspiele/merkblaetter/mb-schutz-minderjaehriger-d.pdf",
+    sticker:{titel:"Werbung mit Grenzen", emoji:"📣", fakt:"Nicht irreführend, nicht aufdringlich, nicht an Minderjährige."},
+    loesung:"Unzulässig: Schulhaus/Schulranzen-Bild, Slogan «Gspänli in der Pause», «100 % sicherer Gewinn» · in Ordnung: Logo, «ab 18», Hilfe-Hinweis"
+  },
+  { /* 5 */
+    id:"social", ort:"Social-Media-Wall", icon:"phone", farben:["#a55bd0","#5e2a80"], letter:"U",
+    person:"Jan, Influencer", avatar:{skin:"#8d5a3b",hair:"#1a1a1a",style:"curly",shirt:"#8e44ad"},
+    thema:"Werbung", rolle:"Gemischt", typ:"stories",
+    intro:"Yo! Ich hab 80'000 Follower und poste heute zwei Stories. Die eine bringt mir sogar Geld 🤑. Passt das so?",
+    aufgabe:"Beurteile jede Story: <b>zulässig</b> oder <b>unzulässig</b>?",
+    stories:[
+      {cls:"s1", user:"jan.kickt", msg:"Mit meinem Code bekommst du 50 Franken Startguthaben bei BetBlitz24! 🔥", code:"JAN50", meta:"Bezahlte Partnerschaft · BetBlitz24 ist in der Schweiz nicht bewilligt", a:"u"},
+      {cls:"s2", user:"jan.kickt", msg:"Heute im Stadion! Hab mir privat einen Sporttip auf ein 2:1 gegönnt. Mal schauen 😄", meta:"Kein Sponsoring · Jan ist 26 · Sporttip ist ein bewilligtes Angebot", a:"z"}
+    ],
+    hinweis:"Bei Story 1 macht Jan Werbung (Anbieterseite) – wofür genau? Bei Story 2 erzählt er nur von seiner eigenen Teilnahme an einem bewilligten Angebot.",
+    erklaerung:"Werbung für in der Schweiz nicht bewilligte Geldspiele ist verboten, auch für Influencer – es droht eine Busse. Story 1 ist also unzulässig. Story 2 ist keine Werbung: Jan ist erwachsen und erzählt von seiner eigenen Teilnahme an einem bewilligten Angebot. Das ist zulässig.",
+    quelle:"Art. 74 Abs. 3 und Art. 131 Abs. 1 BGS.",
+    link:"https://www.fedlex.admin.ch/eli/cc/2018/795/de",
+    sticker:{titel:"Kein Bonuscode für Illegale", emoji:"📱", fakt:"Werbung für nicht bewilligte Geldspiele ist verboten – auch für Influencer."},
+    loesung:"Story 1 (Bonuscode für BetBlitz24): unzulässig · Story 2 (eigene Teilnahme an Sporttip): zulässig"
+  },
+  { /* 6 */
+    id:"support", ort:"Kundendienst", icon:"shield", farben:["#3a96d6","#165985"], letter:"S",
+    person:"Du im Kundendienst", avatar:{skin:"#dba57c",hair:"#3a2a1a",style:"short",shirt:"#1f78b4",extra:["headset"]},
+    thema:"Spielerschutz", rolle:"Anbieten", typ:"chat",
+    intro:"Du arbeitest heute im Kundendienst eines bewilligten Online-Anbieters (fiktiv). Gerade meldet sich ein Kunde im Chat.",
+    aufgabe:"Wähle bei jeder Nachricht die rechtlich und menschlich richtige Antwort.",
+    chat:[
+      {them:"Hoi! Ich möchte ein neues Konto eröffnen. Mein altes ist irgendwie gesperrt 😅 Geht das mit einer neuen E-Mail-Adresse?",
+       opts:[
+         {t:"Klar, mit neuer E-Mail geht das sofort!", ok:false, why:"Ein neues Konto darf kein Schlupfloch sein. Der Anbieter muss zuerst prüfen, ob die Person gesperrt ist."},
+         {t:"Ich prüfe zuerst deine Personalien im Sperrregister.", ok:true},
+         {t:"Gesperrt? Dann gibt's 50 Franken Bonus als Willkommensgeschenk!", ok:false, why:"Ein Bonus für eine möglicherweise gesperrte Person widerspricht dem Spielerschutz komplett."}
+       ], sys:"Sperrregister: Treffer – Reto M., Spielsperre auf eigenen Antrag."},
+      {them:"Ach komm, das war nur eine Phase. Mach doch eine Ausnahme, niemand merkt's.",
+       opts:[
+         {t:"Okay, aber nur dieses eine Mal.", ok:false, why:"Eine Spielsperre gilt verbindlich. Der Anbieter darf keine Ausnahmen machen."},
+         {t:"Versuch's doch bei einer ausländischen Seite.", ok:false, why:"Damit würdest du auf ein illegales Angebot verweisen – und Reto noch mehr gefährden."},
+         {t:"Das darf ich nicht. Die Sperre gilt für alle Spielbanken und alle Online-Grossspiele. Aufheben lässt sie sich nur auf Antrag, wenn die Gründe weggefallen sind.", ok:true}
+       ]},
+      {them:"Hmm … ehrlich gesagt hab ich in letzter Zeit wieder ziemlich viel verloren.",
+       opts:[
+         {t:"Selber schuld.", ok:false, why:"Anbieter müssen ein Sozialkonzept haben – dazu gehört, gefährdete Personen ernst zu nehmen und auf Hilfe hinzuweisen."},
+         {t:"Danke, dass du das sagst. Es gibt kostenlose, anonyme Beratung, z. B. bei SOS Spielsucht (0800 040 080).", ok:true},
+         {t:"Probier's doch mal mit Lotto, das ist was anderes.", ok:false, why:"Auch Lotto ist ein Geldspiel – das hilft Reto nicht."}
+       ], end:"Danke … ich ruf da mal an. 🙏"}
+    ],
+    hinweis:"Denk an drei Dinge: Sperrregister prüfen, keine Ausnahmen, auf Hilfsangebote hinweisen.",
+    erklaerung:"Anbieter von Online-Sportwetten müssen ein Sozialkonzept haben und gesperrte Personen vom Spiel ausschliessen. Eine Spielsperre gilt für alle Spielbanken und alle online durchgeführten Grossspiele. Neue E-Mail-Adresse, Bonus oder «Ausnahme» – alles unzulässig.",
+    quelle:"Art. 71, 76, 80 und 81 BGS; BJ, Schutz vor exzessivem Geldspiel.",
+    link:"https://www.bj.admin.ch/de/schutz-der-spielerinnen-und-spieler-vor-exzessivem-geldspiel",
+    sticker:{titel:"Sperre heisst Sperre", emoji:"🛡️", fakt:"Eine Spielsperre gilt für alle Spielbanken und Online-Grossspiele."},
+    loesung:"1. Sperrregister prüfen · 2. Keine Ausnahme, Sperre gilt überall · 3. Auf Beratung (SOS Spielsucht) hinweisen"
+  },
+  { /* 7 */
+    id:"server", ort:"Serverraum", icon:"server", farben:["#2c5364","#0f2027"], letter:"S",
+    person:"Aylin, Netzwerktechnikerin", avatar:{skin:"#c98e62",hair:"#1a1a1a",style:"long",shirt:"#16a085",extra:["glasses"]},
+    thema:"Netzsperre", rolle:"Behörde/Internetanbieter", typ:"netblock",
+    intro:"Ich arbeite bei einem Schweizer Internetanbieter (fiktiv). Wir müssen Geldspielseiten sperren, die auf der Sperrliste stehen. Mein Filter ist ausgefallen – hilf mir, den Datenverkehr von Hand zu prüfen!",
+    aufgabe:"Lies den Steckbrief jeder Website und entscheide schnell: <b>Zugang offen lassen</b> oder <b>sperren</b>? Pro Paket hast du 30 Sekunden.",
+    zeit:30,
+    sites:[
+      {url:"www.swisslos.ch", logo:"🍀", farbe:"#d4f1df", rows:[["Betreiber","Swisslos, Basel"],["Angebot","Lotterien und Sportwetten (Sporttip)"],["Bewilligung","Schweizer Bewilligung ✔"]], block:false, why:"Swisslos ist eine bewilligte Schweizer Veranstalterin. Ihr Angebot wird nicht gesperrt."},
+      {url:"www.betblitz24.example", logo:"⚡", farbe:"#ecdcff", rows:[["Betreiber","BetBlitz Ltd., Malta"],["Angebot","Online-Sportwetten in CHF"],["Bewilligung","nur Lizenz aus Malta"]], block:true, why:"Eine Lizenz aus Malta zählt nicht. Ohne Schweizer Bewilligung kommt die Seite auf die Sperrliste."},
+      {url:"www.fussball-resultate.example", logo:"📰", farbe:"#e6eef7", rows:[["Betreiber","Sportmedien AG, Zürich"],["Angebot","Resultate, Tabellen, Spielberichte"],["Bewilligung","nicht nötig"]], block:false, why:"Eine Sport-Newsseite ohne Geldeinsatz ist kein Geldspiel. Sie wird nicht gesperrt."},
+      {url:"www.wetten-schweiz.example", logo:"🇨🇭", farbe:"#ffe0e0", rows:[["Betreiber","unbekannt, Server im Ausland"],["Angebot","Online-Sportwetten, Logo mit Schweizerkreuz"],["Bewilligung","keine"]], block:true, why:"Ein Schweizerkreuz im Logo ist keine Bewilligung! Ohne Schweizer Bewilligung wird gesperrt."},
+      {url:"www.loro.ch", logo:"🎯", farbe:"#d4f1df", rows:[["Betreiber","Loterie Romande, Lausanne"],["Angebot","Lotterien und Sportwetten"],["Bewilligung","Schweizer Bewilligung ✔"]], block:false, why:"Die Loterie Romande ist eine bewilligte Schweizer Veranstalterin."},
+      {url:"www.goalgold-casino.example", logo:"🎰", farbe:"#fff1c9", rows:[["Betreiber","GoalGold N.V., Curaçao"],["Angebot","Online-Casino und Fussballwetten"],["Bewilligung","keine Schweizer Bewilligung"]], block:true, why:"Ausländisches Online-Geldspiel ohne Schweizer Bewilligung – sperren."}
+    ],
+    hinweis:"Gesperrt werden nur Online-Geldspiele ohne Schweizer Bewilligung. Logos, Flaggen und ausländische Lizenzen zählen nicht – und eine Newsseite ohne Einsatz ist gar kein Geldspiel.",
+    erklaerung:"Online-Geldspiele ohne Schweizer Bewilligung werden gesperrt. Die Gespa (Lotterien, Sportwetten) und die ESBK (Spielbankenspiele) führen Sperrlisten, und die Schweizer Internetanbieter müssen den Zugang blockieren. Wer eine gesperrte Seite aufruft, landet auf einer Informationsseite. Ein Schweizerkreuz im Logo ist keine Bewilligung.",
+    quelle:"Art. 86 ff. BGS; Merkblatt BJ «Illegale Onlineseiten»; Gespa, Zugangssperre.",
+    link:"https://www.bj.admin.ch/dam/bj/de/data/wirtschaft/geldspiele/merkblaetter/mb-illegale-onlineseiten-d.pdf",
+    sticker:{titel:"Netzsperre", emoji:"🛰️", fakt:"Nicht bewilligte Online-Geldspiele werden von Schweizer Internetanbietern blockiert."},
+    loesung:"Offen: swisslos.ch, fussball-resultate (kein Geldspiel), loro.ch · Sperren: betblitz24, wetten-schweiz (Kreuz ≠ Bewilligung), goalgold-casino"
+  },
+  { /* 8 */
+    id:"schiri", ort:"Schiri-Kabine", icon:"whistle", farben:["#2b2b2b","#0d0d0d"], letter:"P",
+    person:"Petra, Schiedsrichterin", avatar:{skin:"#f1c7a5",hair:"#a0522d",style:"bun",shirt:"#111111"},
+    thema:"Wettkampfmanipulation", rolle:"Gemischt", typ:"judge",
+    intro:"Vor dem Anpfiff hat mir Noah, ein junger Spieler aus einem Challenge-League-Team (fiktiv), diesen Chatverlauf gezeigt. Auf das Spiel werden Sportwetten angeboten. Was sagst du dazu?",
+    aufgabe:"Lies den Chat und beurteile das Verhalten jeder Person: <b>strafbar</b> oder <b>nicht strafbar</b>?",
+    vorspann:`<div class="chathead">🔒 Chat · Luca (Verteidiger)</div>
+      <div class="chat wa">
+        <div class="msg them"><span class="from">Unbekannte Nummer</span>Hey Luca 👋 2000 Franken für dich, wenn du heute in den ersten 15 Minuten Gelb holst.<span class="time">13:02</span></div>
+        <div class="msg them"><span class="from">Unbekannte Nummer</span>Ich setze dann online auf eine frühe Gelbe Karte. Bleibt unter uns 🤫<span class="time">13:03</span></div>
+        <div class="msg wame">Ok, Deal. Schick das Geld vorher.<span class="time">13:10</span></div>
+        <div class="msg sys">Noah hat dieselbe Nachricht bekommen – und zeigt sie Petra.</div>
+      </div>`,
+    items:[
+      {t:"Die unbekannte Person", text:"bietet Luca 2000 Franken an, damit er absichtlich früh eine Gelbe Karte holt.", a:"u", labels:{z:"Nicht strafbar",u:"Strafbar"}},
+      {t:"Luca", text:"nimmt das Angebot an und verlangt das Geld im Voraus.", a:"u", labels:{z:"Nicht strafbar",u:"Strafbar"}},
+      {t:"Noah", text:"meldet die Nachricht der Schiedsrichterin, seinem Verein und der Meldestelle seines Verbands.", a:"z", labels:{z:"Nicht strafbar",u:"Strafbar"}}
+    ],
+    hinweis:"Bei Wettkampfmanipulation sind beide Seiten strafbar: wer einen Vorteil anbietet – und wer ihn annimmt. Melden ist dagegen genau richtig.",
+    erklaerung:"Wettkampfmanipulation ist in der Schweiz strafbar – für die Person, die einen Vorteil anbietet (indirekte Manipulation), und für den Spieler, der ihn annimmt (direkte Manipulation): Freiheitsstrafe bis zu drei Jahren oder Geldstrafe, in schweren Fällen bis zu fünf Jahren. Die Gespa befasst sich mit Wettkampfmanipulation und veröffentlicht jährlich einen Bericht dazu. Noah handelt vorbildlich.",
+    quelle:"Art. 25a Sportförderungsgesetz (SpoFöG); Gespa-Jahresbericht Wettkampfmanipulation, März 2026.",
+    link:"https://www.gespa.ch/download/pictures/96/lledf36lzjm4xvs1w7lp8kd8kg362t/26-03-12_jahresbericht_wettkampfmanipulation_de.pdf",
+    sticker:{titel:"Fair Play ist Pflicht", emoji:"🟥", fakt:"Wettkampfmanipulation ist strafbar – bis zu 3 Jahre, in schweren Fällen 5."},
+    loesung:"Unbekannte Person: strafbar · Luca: strafbar · Noah (meldet): nicht strafbar"
+  },
+  { /* 9 */
+    id:"lounge", ort:"VIP-Lounge", icon:"trophy", farben:["#2fbf9f","#127462"], letter:"F",
+    person:"Sandra, Teamleiterin", avatar:{skin:"#f5d0b5",hair:"#a8321c",style:"bob",shirt:"#16a085"},
+    thema:"Privater Kreis", rolle:"Gemischt", typ:"judge",
+    intro:"Die WM kommt! Ich will ein Tippspiel organisieren und habe drei Ideen. Welche sind erlaubt?",
+    aufgabe:"Beurteile jede Variante: <b>zulässig</b> oder <b>unzulässig</b>?",
+    items:[
+      {t:"Variante A – Team-Tippspiel", text:"8 Leute aus meinem Team zahlen je 10 Franken. Wer am meisten richtig tippt, gewinnt den ganzen Topf. Ich verdiene nichts daran, und es wird nirgends öffentlich beworben.", a:"z"},
+      {t:"Variante B – Öffentliches Online-Tippspiel", text:"Ich stelle das Tippspiel öffentlich ins Internet. Alle können gegen 10 Franken mitmachen, und ich behalte 20 % der Einsätze als «Organisationsgebühr».", a:"u"},
+      {t:"Variante C – Tippspiel ohne Einsatz", text:"Im Team tippen alle gratis mit. Wer gewinnt, bekommt den selbstgebastelten Wanderpokal fürs Büro.", a:"z"}
+    ],
+    hinweis:"Kennen sich alle persönlich? Verdient jemand daran? Wird es öffentlich angeboten? Und: Braucht es überhaupt einen Geldeinsatz für ein Geldspiel?",
+    erklaerung:"Geldspiele im privaten Kreis fallen nicht unter das Geldspielgesetz: nicht gewerbsmässig, Teilnehmende kennen sich persönlich, keine öffentliche Werbung (A). Ohne Geldeinsatz ist es gar kein Geldspiel (C). Wird das Tippspiel aber öffentlich online angeboten und schöpft Sandra Gewinn ab, verlässt es den privaten Kreis – ohne Bewilligung unzulässig (B).",
+    quelle:"Art. 1 Abs. 2 lit. a und Art. 3 lit. a BGS i.V.m. Art. 1 VGS.",
+    link:"https://www.fedlex.admin.ch/eli/cc/2018/795/de",
+    sticker:{titel:"Privater Kreis", emoji:"🏆", fakt:"Ein Tippspiel unter Bekannten ohne Gewinnabschöpfung fällt nicht unter das BGS."},
+    loesung:"A (Team, kein Gewinn): zulässig · B (öffentlich, 20 % Gebühr): unzulässig · C (ohne Einsatz): zulässig"
+  },
+  { /* 10 */
+    id:"recht", ort:"Rechtsabteilung", icon:"law", farben:["#8e6e3b","#4d3a1c"], letter:"I",
+    person:"Dr. Elena Weber, Clubjuristin", avatar:{skin:"#f3d2b8",hair:"#2b1b10",style:"bob",shirt:"#34495e",extra:["glasses","tie"]},
+    thema:"Rechtsgrundlagen", rolle:"Wissen", typ:"match",
+    intro:"Mein Aktenschrank ist umgekippt! Sechs Fälle liegen durcheinander. Kannst du jedem Fall die richtige Rechtsgrundlage zuordnen?",
+    aufgabe:"Tippe zuerst einen <b>Fall</b> an, dann den passenden <b>Artikel</b>. Wenn alle zugeordnet sind: «Akten prüfen».",
+    cases:[
+      {t:"Ein Kiosk verkauft einen Sporttip-Schein an einen 16-Jährigen.", a:"72"},
+      {t:"Eine Kampagne wirbt mit Schulranzen und «Wette in der Pause!».", a:"74"},
+      {t:"Ein gesperrter Kunde eröffnet mit neuer E-Mail ein Konto.", a:"80"},
+      {t:"Ein Internetanbieter blockiert eine ausländische Wettseite.", a:"86"},
+      {t:"Eine Firma bietet ohne Bewilligung Online-Sportwetten an – Strafverfahren.", a:"130"},
+      {t:"Ein Spieler kassiert Geld für eine absichtliche Gelbe Karte.", a:"25a"}
+    ],
+    arts:[
+      {id:"86", t:"Art. 86 BGS", d:"Sperre des Zugangs zu nicht bewilligten Online-Angeboten"},
+      {id:"72", t:"Art. 72 BGS", d:"Schutz von Minderjährigen"},
+      {id:"25a", t:"Art. 25a SpoFöG", d:"Wettkampfmanipulation"},
+      {id:"130", t:"Art. 130 BGS", d:"Strafbestimmung: Geldspiele ohne Bewilligung durchführen"},
+      {id:"80", t:"Art. 80 BGS", d:"Spielsperre"},
+      {id:"74", t:"Art. 74 BGS", d:"Werbung"}
+    ],
+    hinweis:"Lies die Kurztitel der Artikel genau – sie verraten viel. Nur ein Artikel stammt nicht aus dem Geldspielgesetz.",
+    erklaerung:"Das Bundesgesetz über Geldspiele (BGS, SR 935.51) regelt Minderjährigenschutz (Art. 72), Werbung (Art. 74), Spielsperren (Art. 80), Netzsperren (Art. 86 ff.) und Strafen (Art. 130 f.). Die Manipulation von Sportwettkämpfen ist im Sportförderungsgesetz geregelt (Art. 25a SpoFöG).",
+    quelle:"BGS, SR 935.51; SpoFöG, SR 415.0 – Fedlex.",
+    link:"https://www.fedlex.admin.ch/eli/cc/2018/795/de",
+    sticker:{titel:"Die Paragrafen", emoji:"📜", fakt:"Art. 72, 74, 80, 86, 130 BGS und Art. 25a SpoFöG."},
+    loesung:"Kiosk → Art. 72 · Kampagne → Art. 74 · Gesperrter Kunde → Art. 80 · Internetanbieter → Art. 86 · Firma ohne Bewilligung → Art. 130 · Gelbe Karte gegen Geld → Art. 25a SpoFöG"
+  },
+  { /* 11 */
+    id:"museum", ort:"Stadionmuseum", icon:"museum", farben:["#7f8c8d","#3d4849"], letter:"F",
+    person:"Herr Gerber, Museumsführer", avatar:{skin:"#f3d2b8",hair:"#ececec",style:"short",shirt:"#7f4f24",extra:["glasses","beard"]},
+    thema:"Geschichte des Geldspielrechts", rolle:"Wissen", typ:"timeline",
+    intro:"Willkommen im Museum! Leider hat jemand meine Ausstellung durcheinandergebracht. Die Tafeln zur Geschichte des Schweizer Geldspielrechts stehen in der falschen Reihenfolge.",
+    aufgabe:"Bringe die Ereignisse in die <b>richtige zeitliche Reihenfolge</b> – vom ältesten oben bis zum neusten unten. Verschiebe mit ▲▼ oder per Ziehen.",
+    items:[
+      {t:"Das Lotteriegesetz regelt Lotterien und gewerbsmässige Wetten.", j:"1923"},
+      {t:"Volk und Stände nehmen einen neuen Verfassungsartikel über Geldspiele an.", j:"2012"},
+      {t:"Das Parlament verabschiedet das neue Geldspielgesetz.", j:"2017"},
+      {t:"Das Stimmvolk sagt Ja zum Geldspielgesetz – mit 72,9 %.", j:"2018"},
+      {t:"Das Geldspielgesetz tritt in Kraft. Nicht bewilligte Online-Angebote können nun gesperrt werden.", j:"2019"},
+      {t:"Gespa-Testkäufe: Minderjährige kommen bei fast jedem zweiten Versuch zu einer Sportwette.", j:"2026"}
+    ],
+    start:[3,0,5,1,4,2],
+    hinweis:"Das Gesetz musste zuerst vom Parlament verabschiedet werden – dann kam das Referendum mit der Volksabstimmung, erst danach trat es in Kraft. Das Lotteriegesetz ist fast 100 Jahre älter.",
+    erklaerung:"Lange galt das Lotteriegesetz von 1923. 2012 wurde ein neuer Verfassungsartikel angenommen, 2017 verabschiedete das Parlament das Geldspielgesetz, und am 10. Juni 2018 sagte das Volk mit 72,9 % Ja. Seit dem 1. Januar 2019 ist das BGS in Kraft – inklusive Netzsperren. Testkäufe der Gespa 2026 zeigen: Beim Jugendschutz gibt es weiterhin Lücken.",
+    quelle:"BJ, Geldspielgesetz; Swissvotes, Abstimmung vom 10.6.2018; Gespa-Medienmitteilung 15.7.2026.",
+    link:"https://www.bj.admin.ch/de/geldspielgesetz",
+    sticker:{titel:"Seit 2019", emoji:"🏛️", fakt:"Das BGS gilt seit 1.1.2019 – das Volk sagte 2018 mit 72,9 % Ja."},
+    loesung:"1923 Lotteriegesetz → 2012 Verfassungsartikel → 2017 Parlament → 2018 Volksabstimmung (72,9 %) → 2019 Inkrafttreten → 2026 Testkäufe"
+  },
+  { /* 12 */
+    id:"presse", ort:"Pressekonferenz", icon:"mic", farben:["#59636c","#2c3338"], letter:"F",
+    person:"Mia, Sportjournalistin", avatar:{skin:"#e8b98f",hair:"#2b1b10",style:"bun",shirt:"#34495e",extra:["glasses"]},
+    thema:"Bewilligte Anbieter", rolle:"Wissen", typ:"quiz",
+    intro:"Ich schreibe einen Artikel über Sportwetten in der Schweiz. Für meinen Faktencheck brauche ich vier schnelle Antworten – kannst du mir helfen?",
+    aufgabe:"Beantworte alle vier Fragen und klicke dann auf «Antworten abgeben».",
+    fragen:[
+      {t:"Wer darf in der Schweiz Online-Sportwetten veranstalten?", opts:["Jede Firma mit einer EU-Lizenz","Nur Swisslos und die Loterie Romande","Jeder Fussballclub für seine eigenen Spiele","Niemand – Online-Sportwetten sind verboten"], a:1},
+      {t:"Wer führt die Sperrliste für nicht bewilligte Online-Sportwetten und Lotterien?", opts:["Die FIFA","Die Kantonspolizei","Die Gespa (Interkantonale Geldspielaufsicht)","Swisslos"], a:2},
+      {t:"Ab welchem Alter dürfen online durchgeführte Grossspiele wie Sportwetten genutzt werden?", opts:["16 Jahre","17 Jahre","18 Jahre","21 Jahre"], a:2},
+      {t:"Gespa-Testkäufe 2026: Wie oft kamen minderjährige Testpersonen zu einer Sportwette?", opts:["In etwa 5 % der Fälle","In 47,5 % der Fälle – fast jedes zweite Mal","Nie – die Kontrollen funktionierten","In allen Fällen"], a:1}
+    ],
+    hinweis:"Online-Sportwetten sind ein «Grossspiel». Die Aufsicht über Grossspiele liegt bei einer interkantonalen Behörde – nicht bei der Polizei oder einem Verband. Und die Testkäufe zeigten grosse Lücken.",
+    erklaerung:"Online, automatisiert oder in mehreren Kantonen angebotene Sportwetten dürfen nur Swisslos und die Loterie Romande veranstalten. Die Gespa beaufsichtigt diese Grossspiele und führt die Sperrliste. Online-Grossspiele sind erst ab 18. Bei 200 Testkäufen 2026 schlossen Minderjährige in 47,5 % der Fälle eine Sportwette ab – an Selbstbedienungsgeräten sogar in 66,7 %.",
+    quelle:"Art. 3 lit. e, 72, 86 BGS; BJ, Fragen und Antworten zum BGS; Gespa-Medienmitteilung 15.7.2026.",
+    link:"https://www.bj.admin.ch/de/fragen-und-antworten-zum-geldspielgesetz",
+    sticker:{titel:"Nur zwei dürfen", emoji:"🎤", fakt:"Online-Sportwetten: nur Swisslos und Loterie Romande."},
+    loesung:"Nur Swisslos & Loterie Romande · Gespa · 18 Jahre · 47,5 %"
+  }
+];
+
+const PENALTY_POOL = [
+  {q:"Wer darf in der Schweiz online Sportwetten anbieten?", opts:["Jede Firma mit EU-Lizenz","Nur Swisslos und Loterie Romande","Jeder Fussballclub"], a:1, ex:"Online-Sportwetten sind Grossspiele – nur Swisslos und Loterie Romande dürfen sie veranstalten."},
+  {q:"Lara (19) tippt online bei Swisslos 10 Franken. Ist das zulässig?", opts:["Ja, zulässig","Nein, unzulässig","Nur mit Erlaubnis der Eltern"], a:0, ex:"Lara ist volljährig und nutzt ein bewilligtes Angebot."},
+  {q:"Marco wettet per VPN auf einer gesperrten Auslandseite. Macht er sich strafbar?", opts:["Ja, Gefängnis","Nein – aber er riskiert die Einziehung von Einsätzen und Gewinnen","Ja, Busse bis 500'000 Franken"], a:1, ex:"Spielende sind nicht strafbar, verlieren aber den Schweizer Spielerschutz."},
+  {q:"Werbung für nicht bewilligte Geldspiele ist …", opts:["erlaubt mit Hinweis «ab 18»","nur online erlaubt","verboten"], a:2, ex:"Art. 74 Abs. 3 BGS: Werbung für nicht bewilligte Geldspiele ist verboten."},
+  {q:"Für wen gilt eine Spielsperre?", opts:["Nur für einen Anbieter","Für alle Spielbanken und Online-Grossspiele","Nur für einen Monat"], a:1, ex:"Die Sperre gilt anbieterübergreifend."},
+  {q:"Wer führt die Sperrliste für nicht bewilligte Online-Sportwetten?", opts:["Die Gespa","Die FIFA","Der Fussballverband"], a:0, ex:"Die Interkantonale Geldspielaufsicht Gespa führt die Sperrliste für Lotterien und Sportwetten."},
+  {q:"Jemand bietet einem Spieler Geld für eine absichtliche Gelbe Karte. Das ist …", opts:["legal, wenn es privat bleibt","strafbar","nur eine Vereinsangelegenheit"], a:1, ex:"Wettkampfmanipulation ist strafbar (Art. 25a SpoFöG)."},
+  {q:"Ein Tippspiel im Team ohne Gewinnabschöpfung, unter Bekannten …", opts:["fällt nicht unter das Geldspielgesetz","braucht eine Bewilligung der Gespa","ist verboten"], a:0, ex:"Geldspiele im privaten Kreis fallen nicht unter das BGS."},
+  {q:"Eine Website hat ein Schweizerkreuz im Logo, aber keine Bewilligung. Was gilt?", opts:["Sie ist automatisch bewilligt","Sie kommt auf die Sperrliste","Sie braucht nur eine Lizenz aus Malta"], a:1, ex:"Ein Logo ist keine Bewilligung – ohne Schweizer Bewilligung wird gesperrt."},
+  {q:"Seit wann gilt das Geldspielgesetz?", opts:["Seit 1. Januar 2019","Seit 1923","Seit 2026"], a:0, ex:"Das BGS ist seit dem 1. Januar 2019 in Kraft."}
+];
+
+const LEITFRAGEN = [
+  {f:"1. Welche Anbieter dürfen in der Schweiz Fussballwetten anbieten?", a:"Sportwetten, die online, automatisiert oder in mehreren Kantonen angeboten werden (Grossspiele), dürfen nur Swisslos und die Loterie Romande veranstalten. Lokale Sportwetten sind mit kantonaler Bewilligung möglich.", s:[3,7,12]},
+  {f:"2. Ab welchem Alter darf man wetten?", a:"Online-Grossspiele sind für Minderjährige verboten (Art. 72 BGS). Swisslos und Loterie Romande haben für Sportwetten auch am Kiosk 18 Jahre festgelegt. Testkäufe der Gespa 2026 zeigen grosse Lücken bei der Kontrolle.", s:[1,12]},
+  {f:"3. Was gilt für ausländische Onlineangebote?", a:"Ohne Schweizer Bewilligung ist das Anbieten verboten und strafbar (Art. 130 BGS); die Seiten werden gesperrt (Art. 86 ff. BGS). Spielende sind nicht strafbar, riskieren aber die Einziehung von Einsätzen und Gewinnen und haben keinen Schweizer Spielerschutz.", s:[2,3,7]},
+  {f:"4. Wie werden Spielerinnen und Spieler geschützt?", a:"Anbieter brauchen ein Sozialkonzept, müssen gefährdete Personen erkennen, Spielsperren durchsetzen (gilt für alle Spielbanken und Online-Grossspiele) und auf Hilfe hinweisen. Ergänzend schützt das Strafrecht die Integrität des Sports (Wettkampfmanipulation).", s:[6,8]},
+  {f:"5. Welche Regeln gelten für Werbung?", a:"Werbung darf nicht aufdringlich oder irreführend sein und sich nicht an Minderjährige oder gesperrte Personen richten (Art. 74 BGS). Werbung für nicht bewilligte Geldspiele ist verboten; Verstösse werden gebüsst (Art. 131 BGS).", s:[4,5]}
+];
+
+const QUELLEN = [
+  ["Bundesgesetz über Geldspiele (Geldspielgesetz, BGS), SR 935.51 – Fedlex", "https://www.fedlex.admin.ch/eli/cc/2018/795/de"],
+  ["Interkantonale Geldspielaufsicht (Gespa)", "https://www.gespa.ch"],
+  ["Gespa – Medienmitteilung Testkäufe Sportwetten, 15.7.2026", "https://www.gespa.ch/download/pictures/e6/913p1yhtgkg69nu6pgzowrh0syu2b4/26-07-15_medienmitteilung_testkaeufe.pdf"],
+  ["Gespa – Jahresbericht Wettkampfmanipulation, März 2026", "https://www.gespa.ch/download/pictures/96/lledf36lzjm4xvs1w7lp8kd8kg362t/26-03-12_jahresbericht_wettkampfmanipulation_de.pdf"],
+  ["Bundesamt für Justiz – Fragen und Antworten zum Geldspielgesetz", "https://www.bj.admin.ch/de/fragen-und-antworten-zum-geldspielgesetz"],
+  ["Bundesamt für Justiz – Schutz vor exzessivem Geldspiel", "https://www.bj.admin.ch/de/schutz-der-spielerinnen-und-spieler-vor-exzessivem-geldspiel"],
+  ["Bundesamt für Justiz – Merkblatt Schutz Minderjähriger", "https://www.bj.admin.ch/dam/bj/de/data/wirtschaft/geldspiele/merkblaetter/mb-schutz-minderjaehriger-d.pdf"],
+  ["Bundesamt für Justiz – Merkblatt Illegale Onlineseiten", "https://www.bj.admin.ch/dam/bj/de/data/wirtschaft/geldspiele/merkblaetter/mb-illegale-onlineseiten-d.pdf"],
+  ["Sportförderungsgesetz (SpoFöG), SR 415.0, Art. 25a – Fedlex", "https://www.fedlex.admin.ch/eli/cc/2012/460/de"],
+  ["Swissvotes – Abstimmung über das Geldspielgesetz vom 10.6.2018", "https://swissvotes.ch/vote/619.00"]
+];
+
+const PUNKTE = {basis:100, gelb:20, joker:30, minimum:20, tor:20};
+const JOKER_TOTAL = 3;
+const LOESUNG = STATIONEN.map(s => s.letter).join("");   // SCHLUSSPFIFF
+
+/* ======================= Illustrationen ======================= */
+function avatar(a){
+  const ex = a.extra || [], h = a.hair, s = a.skin;
+  let back = "", front = "";
+  switch(a.style){
+    case "long":  back = `<path d="M27 46 Q26 20 50 19 Q74 20 73 46 L76 76 Q50 82 24 76Z" fill="${h}"/>`;
+                  front = `<path d="M31 42 Q33 25 50 24 Q67 25 69 42 Q60 33 47 33 Q38 34 31 42Z" fill="${h}"/>`; break;
+    case "bun":   back = `<circle cx="50" cy="20" r="9" fill="${h}"/>`;
+                  front = `<path d="M31 44 Q30 24 50 24 Q70 24 69 44 Q64 31 50 31 Q36 31 31 44Z" fill="${h}"/>`; break;
+    case "curly": front = [[34,32],[42,26],[51,24],[60,26],[67,32],[31,40],[69,40]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="8" fill="${h}"/>`).join(""); break;
+    case "cap":   front = `<path d="M30 40 Q30 22 50 22 Q70 22 70 40Z" fill="#c0392b"/><path d="M50 38 L80 40 Q78 44 50 42Z" fill="#922b21"/><circle cx="50" cy="23" r="2.5" fill="#922b21"/>`; break;
+    case "bob":   back = `<path d="M28 48 Q26 21 50 20 Q74 21 72 48 L72 60 Q66 62 64 56 L36 56 Q34 62 28 60Z" fill="${h}"/>`;
+                  front = `<path d="M31 42 Q34 24 50 24 Q66 24 69 42 Q66 34 50 32 Q40 33 31 42Z" fill="${h}"/>`; break;
+    default:      front = `<path d="M31 42 Q30 22 50 22 Q70 22 69 42 Q65 31 50 30 Q35 31 31 42Z" fill="${h}"/>`;
+  }
+  let body = "";
+  if(ex.includes("apron")) body += `<path d="M38 74 L62 74 L64 100 L36 100Z" fill="#f4f1e6"/>`;
+  if(ex.includes("tie"))   body += `<path d="M50 70 L46 74 L50 92 L54 74Z" fill="#c0392b"/><path d="M42 70 L50 76 L58 70" fill="#fff"/>`;
+  let face = "";
+  if(ex.includes("beard"))   face += `<path d="M34 48 Q36 66 50 66 Q64 66 66 48 Q62 58 50 58 Q38 58 34 48Z" fill="${h}"/>`;
+  if(ex.includes("glasses")) face += `<g fill="none" stroke="#222" stroke-width="2"><circle cx="43" cy="46" r="5.5"/><circle cx="57" cy="46" r="5.5"/><path d="M48.5 46 L51.5 46"/></g>`;
+  if(ex.includes("headset")) face += `<path d="M30 46 Q30 22 50 22 Q70 22 70 46" fill="none" stroke="#222" stroke-width="3"/><rect x="26" y="42" width="7" height="12" rx="3" fill="#222"/><rect x="67" y="42" width="7" height="12" rx="3" fill="#222"/><path d="M30 54 Q32 62 42 61" stroke="#222" stroke-width="2" fill="none"/><circle cx="43" cy="61" r="2.5" fill="#222"/>`;
+  return `<svg class="av" viewBox="0 0 100 100" aria-hidden="true">${back}
+    <path d="M18 100 Q18 72 50 70 Q82 72 82 100Z" fill="${a.shirt}"/>${body}
+    <rect x="44" y="58" width="12" height="14" rx="4" fill="${s}"/>
+    <circle cx="31" cy="47" r="4" fill="${s}"/><circle cx="69" cy="47" r="4" fill="${s}"/>
+    <ellipse cx="50" cy="45" rx="18" ry="20" fill="${s}"/>
+    <circle cx="43" cy="46" r="2.2" fill="#222"/><circle cx="57" cy="46" r="2.2" fill="#222"/>
+    <circle cx="39" cy="53" r="3" fill="#e8806a" opacity=".35"/><circle cx="61" cy="53" r="3" fill="#e8806a" opacity=".35"/>
+    <path d="M44 55 Q50 60 56 55" stroke="#7a3b2a" stroke-width="2" fill="none" stroke-linecap="round"/>${front}${face}</svg>`;
+}
+
+const ICONS = {
+  phone:`<svg viewBox="0 0 40 40"><rect x="11" y="3" width="18" height="34" rx="4" fill="#222"/><rect x="13" y="7" width="14" height="24" fill="#c13584"/><rect x="16" y="15" width="8" height="8" rx="2" fill="none" stroke="#fff" stroke-width="2"/><circle cx="20" cy="19" r="2" fill="#fff"/></svg>`,
+  kiosk:`<svg viewBox="0 0 40 40"><rect x="5" y="16" width="30" height="20" fill="#d9a35b"/><path d="M3 16 L8 6 L32 6 L37 16Z" fill="#c0392b"/><path d="M8 6 L11 16 M16 6 L17 16 M24 6 L23 16 M32 6 L29 16" stroke="#fff" stroke-width="2"/><rect x="12" y="21" width="16" height="9" fill="#fff"/></svg>`,
+  globe:`<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="#3e8ed0"/><path d="M10 13 Q16 10 18 16 Q14 20 17 25 Q12 27 9 22Z M23 8 Q30 12 28 18 Q24 17 22 13Z M24 24 Q30 23 31 28 Q26 33 23 29Z" fill="#5fbf6a"/></svg>`,
+  tv:`<svg viewBox="0 0 40 40"><rect x="10" y="3" width="20" height="34" rx="4" fill="#111"/><rect x="12" y="7" width="16" height="25" fill="#ff2d55"/><path d="M17 14 V25 L25 19.5Z" fill="#fff"/></svg>`,
+  shield:`<svg viewBox="0 0 40 40"><path d="M20 3 L34 8 V19 Q34 31 20 37 Q6 31 6 19 V8Z" fill="#1f78b4"/><path d="M13 13 L27 27 M27 13 L13 27" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/></svg>`,
+  trophy:`<svg viewBox="0 0 40 40"><path d="M12 5 H28 V15 Q28 24 20 24 Q12 24 12 15Z" fill="#f5c542"/><path d="M12 8 H6 Q6 17 13 17 M28 8 H34 Q34 17 27 17" stroke="#f5c542" stroke-width="2.5" fill="none"/><rect x="18" y="24" width="4" height="6" fill="#d79b13"/><rect x="12" y="30" width="16" height="6" rx="1" fill="#6b4a1a"/></svg>`,
+  flag:`<svg viewBox="0 0 40 40"><rect x="8" y="4" width="3" height="33" fill="#555"/><path d="M11 5 Q20 1 26 6 Q32 10 36 6 V22 Q32 26 26 22 Q20 17 11 21Z" fill="#e74c3c"/><path d="M19 9 h4 v4 h4 v4 h-4 v4 h-4 v-4 h-4 v-4 h4z" fill="#fff"/></svg>`,
+  mic:`<svg viewBox="0 0 40 40"><rect x="14" y="3" width="12" height="20" rx="6" fill="#34495e"/><path d="M9 17 Q9 29 20 29 Q31 29 31 17" stroke="#34495e" stroke-width="3" fill="none"/><rect x="18" y="29" width="4" height="6" fill="#34495e"/><rect x="12" y="34" width="16" height="3" rx="1" fill="#34495e"/></svg>`,
+  server:`<svg viewBox="0 0 40 40"><rect x="7" y="4" width="26" height="9" rx="2" fill="#2c3e50"/><rect x="7" y="15" width="26" height="9" rx="2" fill="#2c3e50"/><rect x="7" y="26" width="26" height="9" rx="2" fill="#2c3e50"/><circle cx="12" cy="8.5" r="1.8" fill="#36d27c"/><circle cx="12" cy="19.5" r="1.8" fill="#d23b30"/><circle cx="12" cy="30.5" r="1.8" fill="#36d27c"/><path d="M17 8.5 H29 M17 19.5 H29 M17 30.5 H29" stroke="#7fd4ff" stroke-width="1.5"/></svg>`,
+  whistle:`<svg viewBox="0 0 40 40"><rect x="9" y="5" width="9" height="13" rx="2" fill="#f7d31a" stroke="#222" transform="rotate(-10 13 11)"/><rect x="20" y="7" width="9" height="13" rx="2" fill="#d23b30" stroke="#222" transform="rotate(10 24 13)"/><circle cx="20" cy="28" r="7" fill="#444"/><rect x="20" y="24" width="14" height="6" rx="2" fill="#444"/></svg>`,
+  law:`<svg viewBox="0 0 40 40"><rect x="18.5" y="6" width="3" height="26" fill="#6b4a1a"/><rect x="11" y="32" width="18" height="4" rx="1" fill="#6b4a1a"/><path d="M8 11 H32" stroke="#6b4a1a" stroke-width="2.5"/><path d="M8 11 L4 21 H12Z M32 11 L28 21 H36Z" fill="#d79b13"/><circle cx="20" cy="6" r="3" fill="#d79b13"/></svg>`,
+  museum:`<svg viewBox="0 0 40 40"><path d="M4 14 L20 4 L36 14Z" fill="#7f8c8d"/><rect x="7" y="16" width="4" height="15" fill="#95a5a6"/><rect x="15" y="16" width="4" height="15" fill="#95a5a6"/><rect x="21" y="16" width="4" height="15" fill="#95a5a6"/><rect x="29" y="16" width="4" height="15" fill="#95a5a6"/><rect x="4" y="32" width="32" height="4" fill="#7f8c8d"/></svg>`
+};
+const CARD_YELLOW = `<svg class="refcard" viewBox="0 0 54 76" aria-hidden="true"><rect x="3" y="3" width="44" height="66" rx="5" fill="#f7d31a" stroke="#1b1f1c" stroke-width="2" transform="rotate(-8 27 38)"/></svg>`;
+const CARD_GREEN  = `<svg class="refcard" viewBox="0 0 54 76" aria-hidden="true"><g transform="rotate(8 27 38)"><rect x="3" y="3" width="44" height="66" rx="5" fill="#1f9a55" stroke="#1b1f1c" stroke-width="2"/><path d="M14 38 L23 47 L39 28" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g></svg>`;
+const VAR_ICON = `<svg class="refcard" viewBox="0 0 54 54" aria-hidden="true"><rect x="2" y="8" width="50" height="34" rx="5" fill="#1b1f1c"/><rect x="6" y="12" width="42" height="26" fill="#2f6fd0"/><text x="27" y="31" text-anchor="middle" font-family="Bebas Neue, Impact" font-size="16" fill="#fff">VAR</text><rect x="20" y="42" width="14" height="6" fill="#1b1f1c"/></svg>`;
+const PADLOCK = `<svg class="padlock" id="padlock" viewBox="0 0 120 150" width="150" aria-hidden="true"><path class="shackle" d="M30 70 V45 Q30 15 60 15 Q90 15 90 45 V70" fill="none" stroke="#9aa3a0" stroke-width="12" stroke-linecap="round"/><rect x="14" y="66" width="92" height="76" rx="14" fill="#f5c542" stroke="#b38a17" stroke-width="4"/><circle cx="60" cy="98" r="9" fill="#6b4a1a"/><rect x="56" y="102" width="8" height="20" rx="3" fill="#6b4a1a"/></svg>`;
+const TROPHY = `<svg class="trophy" viewBox="0 0 120 130" aria-hidden="true"><path d="M30 10 H90 V45 Q90 80 60 80 Q30 80 30 45Z" fill="#f5c542" stroke="#b38a17" stroke-width="3"/><path d="M30 20 H12 Q10 55 34 55 M90 20 H108 Q110 55 86 55" stroke="#f5c542" stroke-width="7" fill="none"/><rect x="52" y="80" width="16" height="18" fill="#d79b13"/><rect x="32" y="98" width="56" height="22" rx="4" fill="#5c3d12"/><text x="60" y="114" text-anchor="middle" font-family="Bebas Neue, Impact" font-size="14" fill="#f5c542">FAIR PLAY</text><circle cx="60" cy="40" r="14" fill="#fff" stroke="#222" stroke-width="2"/><polygon points="60,32 67,37 64,45 56,45 53,37" fill="#222"/></svg>`;
+const BALL = `<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="#fff" stroke="#222" stroke-width="2"/><polygon points="20,11 28,17 25,26 15,26 12,17" fill="#222"/><path d="M20 11 V3 M28 17 L36 14 M25 26 L30 34 M15 26 L10 34 M12 17 L4 14" stroke="#222" stroke-width="2"/></svg>`;
+const KEEPER = `<svg viewBox="0 0 100 130" aria-hidden="true"><rect x="8" y="40" width="22" height="12" rx="6" fill="#f5c542" transform="rotate(-35 19 46)"/><rect x="70" y="40" width="22" height="12" rx="6" fill="#f5c542" transform="rotate(35 81 46)"/><circle cx="12" cy="34" r="8" fill="#fff" stroke="#222" stroke-width="2"/><circle cx="88" cy="34" r="8" fill="#fff" stroke="#222" stroke-width="2"/><path d="M28 44 Q50 36 72 44 L68 90 H32Z" fill="#f5c542" stroke="#b38a17" stroke-width="2"/><text x="50" y="74" text-anchor="middle" font-family="Bebas Neue, Impact" font-size="20" fill="#1b1f1c">1</text><rect x="34" y="88" width="13" height="34" rx="5" fill="#1b1f1c"/><rect x="53" y="88" width="13" height="34" rx="5" fill="#1b1f1c"/><circle cx="50" cy="24" r="14" fill="#e8b98f"/><path d="M36 22 Q38 8 50 8 Q62 8 64 22 Q58 15 50 15 Q42 15 36 22Z" fill="#2b1b10"/><circle cx="45" cy="25" r="1.8" fill="#222"/><circle cx="55" cy="25" r="1.8" fill="#222"/><path d="M45 31 Q50 34 55 31" stroke="#7a3b2a" stroke-width="1.6" fill="none"/></svg>`;
+const GOAL = `<svg viewBox="0 0 600 260" preserveAspectRatio="none" aria-hidden="true"><defs><pattern id="net" width="18" height="18" patternUnits="userSpaceOnUse"><path d="M0 0 L18 18 M18 0 L0 18" stroke="rgba(255,255,255,.35)" stroke-width="1.2"/></pattern></defs><rect x="10" y="10" width="580" height="250" fill="rgba(0,0,0,.25)"/><rect x="10" y="10" width="580" height="250" fill="url(#net)"/><rect x="0" y="0" width="600" height="12" fill="#fff"/><rect x="0" y="0" width="12" height="260" fill="#fff"/><rect x="588" y="0" width="12" height="260" fill="#fff"/></svg>`;
+
+function mapSvg(){ return `<svg class="base" viewBox="0 0 1000 620" role="img" aria-label="Stadionkarte von oben">
+  <defs>
+    <pattern id="seats" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#3b4652"/><circle cx="6" cy="6" r="3" fill="#c0392b"/></pattern>
+    <pattern id="seats2" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#3b4652"/><circle cx="6" cy="6" r="3" fill="#e8e8e8"/></pattern>
+    <pattern id="mow" width="80" height="10" patternUnits="userSpaceOnUse"><rect width="40" height="10" fill="#2f9152"/><rect x="40" width="40" height="10" fill="#2a8549"/></pattern>
+  </defs>
+  <rect width="1000" height="620" fill="#4f6b52"/>
+  <g fill="#6b8a6e"><circle cx="40" cy="40" r="26"/><circle cx="960" cy="590" r="30"/><circle cx="980" cy="70" r="22"/><circle cx="30" cy="560" r="24"/></g>
+  <path d="M0 604 H1000" stroke="#8c8c8c" stroke-width="26"/><path d="M0 604 H1000" stroke="#fff" stroke-width="2" stroke-dasharray="20 18"/>
+  <ellipse cx="500" cy="310" rx="440" ry="275" fill="#2b3239"/>
+  <ellipse cx="500" cy="310" rx="420" ry="258" fill="url(#seats)"/>
+  <path d="M500 52 A420 258 0 0 1 920 310 A420 258 0 0 1 500 568" fill="url(#seats2)" opacity=".85"/>
+  <ellipse cx="500" cy="310" rx="330" ry="190" fill="#b5653f"/>
+  <ellipse cx="500" cy="310" rx="318" ry="180" fill="url(#mow)"/>
+  <g stroke="#fff" stroke-width="3" fill="none" opacity=".85"><rect x="270" y="170" width="460" height="280"/><line x1="500" y1="170" x2="500" y2="450"/><circle cx="500" cy="310" r="46"/><rect x="270" y="245" width="60" height="130"/><rect x="670" y="245" width="60" height="130"/></g>
+  <rect x="258" y="285" width="12" height="50" fill="#fff"/><rect x="730" y="285" width="12" height="50" fill="#fff"/>
+  <rect x="440" y="584" width="120" height="30" rx="6" fill="#1b1f1c"/><text x="500" y="605" fill="#f5c542" text-anchor="middle" font-family="Bebas Neue, Impact" font-size="18" letter-spacing="2">AUSGANG 🔒</text>
+</svg>`; }
+
+/* ======================= Sound ======================= */
+let soundOn = true, actx = null, crowd = null;
+function ac(){ actx = actx || new (window.AudioContext || window.webkitAudioContext)(); return actx; }
+function tone(f, d, type="sine", when=0, vol=.15){
+  if(!soundOn) return;
+  try{ const c = ac(), o = c.createOscillator(), g = c.createGain(), t = c.currentTime + when;
+    o.type = type; o.frequency.setValueAtTime(f, t); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t + d); }catch(e){}
+}
+function noise(dur, freq, vol){
+  if(!soundOn) return;
+  try{ const c = ac(), len = Math.floor(c.sampleRate*dur), buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+    for(let i=0;i<len;i++) d[i] = Math.random()*2-1;
+    const src = c.createBufferSource(); src.buffer = buf;
+    const bp = c.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = freq; bp.Q.value = .7;
+    const g = c.createGain(), t = c.currentTime; g.gain.setValueAtTime(.001, t); g.gain.exponentialRampToValueAtTime(vol, t + dur*.3); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+    src.connect(bp).connect(g).connect(c.destination); src.start(); }catch(e){}
+}
+const sfx = {
+  whistle(){ tone(2600,.12,"square",0,.05); tone(2500,.35,"square",.15,.05); },
+  longwhistle(){ tone(2600,.15,"square",0,.05); tone(2550,.15,"square",.2,.05); tone(2500,.6,"square",.42,.05); },
+  ok(){ tone(523,.12,"triangle"); tone(659,.12,"triangle",.1); tone(784,.25,"triangle",.2); noise(1.2, 900, .18); },
+  small(){ tone(880,.08,"triangle",0,.08); },
+  bad(){ tone(220,.25,"sawtooth",0,.07); tone(180,.35,"sawtooth",.2,.07); },
+  var(){ tone(440,.1,"sine"); tone(660,.1,"sine",.12); },
+  klack(){ tone(90,.12,"square",0,.2); noise(.15, 300, .3); },
+  kick(){ tone(120,.08,"sine",0,.35); noise(.08, 1500, .2); },
+  goal(){ noise(2.2, 800, .35); [523,659,784,1047].forEach((f,i)=>tone(f,.25,"triangle",.1+i*.12)); },
+  save(){ noise(1.2, 300, .2); tone(200,.3,"sawtooth",0,.05); },
+  win(){ [523,659,784,1047,784,1047].forEach((f,i)=>tone(f,.22,"triangle",i*.13)); noise(3, 850, .3); }
+};
+function toggleCrowd(){
+  if(crowd){ crowd.stop(); crowd = null; return false; }
+  try{ const c = ac(), len = c.sampleRate*3, buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+    let last = 0; for(let i=0;i<len;i++){ const w = Math.random()*2-1; last = (last + .02*w)/1.02; d[i] = last*3.5 + w*.03; }
+    const src = c.createBufferSource(); src.buffer = buf; src.loop = true;
+    const bp = c.createBiquadFilter(); bp.type = "lowpass"; bp.frequency.value = 1200;
+    const g = c.createGain(); g.gain.value = .35;
+    const lfo = c.createOscillator(); lfo.frequency.value = .12; const lg = c.createGain(); lg.gain.value = .12;
+    lfo.connect(lg).connect(g.gain); src.connect(bp).connect(g).connect(c.destination); src.start(); lfo.start();
+    crowd = { stop(){ try{src.stop(); lfo.stop();}catch(e){} } }; return true;
+  }catch(e){ return false; }
+}
+
+/* ======================= Zustand ======================= */
+const $ = id => document.getElementById(id);
+const KEY = "abpfiff-v3", BEST = "abpfiff-v3-best";
+let S = freshState();
+function freshState(){
+  return { team:"", start:null, end:null, jokers:JOKER_TOTAL, halftime:false, unlocked:false, penGoals:0, won:false, recorded:false,
+    st: STATIONEN.map(() => ({solved:false, gelb:0, joker:false, punkte:0})) };
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+function load(){ try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d && d.st && d.st.length === STATIONEN.length) return d; }catch(e){} return null; }
+function clearSave(){ try{ localStorage.removeItem(KEY); }catch(e){} }
+const solvedCount = () => S.st.filter(x => x.solved).length;
+const totalPoints = () => S.st.reduce((a,x) => a + x.punkte, 0) + S.penGoals*PUNKTE.tor;
+const totalGelb = () => S.st.reduce((a,x) => a + x.gelb, 0);
+const MAXPTS = STATIONEN.length*PUNKTE.basis + 5*PUNKTE.tor;
+const teamName = () => S.team || "Euer Team";
+function shuffle(a){ a = a.slice(); for(let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a; }
+function esc(t){ return String(t).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function fmt(ms){ const s = Math.max(0, Math.floor(ms/1000)); return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0"); }
+
+let timer = null;
+function tick(){ if(S.start) $("clock").textContent = fmt((S.end || Date.now()) - S.start); }
+function toast(msg){ const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2600); }
+function ticker(msg){ const el = $("ticker"); el.textContent = "+++ " + msg + " +++"; el.style.animation = "none"; void el.offsetWidth; el.style.animation = ""; }
+
+function renderBoard(flash){
+  $("slots").innerHTML = STATIONEN.map((s,i) =>
+    `<div class="slot ${S.st[i].solved?"filled":""} ${i===flash?"flash":""} ${i===6?"gap":""}">${S.st[i].solved?s.letter:"·"}</div>`).join("");
+  $("pts").textContent = totalPoints();
+  $("albumCount").textContent = solvedCount();
+}
+
+let cleanupFn = null;
+function cleanup(){ if(cleanupFn){ try{ cleanupFn(); }catch(e){} cleanupFn = null; } }
+function showOnly(id){
+  cleanup();
+  ["intro","mapView","stationView","lockView","penaltyView","winView"].forEach(s => $(s).classList.toggle("hidden", s !== id));
+  const top = id === "intro" ? 0 : $("board").offsetTop - 8;
+  window.scrollTo({top, behavior:"smooth"});
+}
+
+/* ======================= Modal ======================= */
+let modalOnClose = null;
+function openModal(html, onClose){ $("modalBody").innerHTML = html; $("modal").classList.remove("hidden"); modalOnClose = onClose || null; $("modalClose").focus(); }
+function closeModal(){ $("modal").classList.add("hidden"); if(modalOnClose){ const f = modalOnClose; modalOnClose = null; f(); } }
+$("modalClose").onclick = closeModal;
+$("modal").addEventListener("click", e => { if(e.target.id === "modal") closeModal(); });
+document.addEventListener("keydown", e => { if(e.key === "Escape" && !$("modal").classList.contains("hidden")) closeModal(); });
+
+/* ======================= Cutscene ======================= */
+function cutscene(lines, onDone){
+  const cs = $("cutscene"); cs.classList.remove("hidden");
+  $("csAv").innerHTML = avatar(RUEDI);
+  let k = 0, typing = null, full = "";
+  const dots = () => $("csDots").innerHTML = lines.map((_,j)=>`<i class="${j<=k?"on":""}"></i>`).join("");
+  const show = () => {
+    const L = lines[k]; full = L.t; dots();
+    if(L.fx === "lightsout"){ document.body.classList.add("lightsout"); sfx.klack(); }
+    if(L.fx === "lightson"){ document.body.classList.remove("lightsout"); }
+    let n = 0; clearInterval(typing); $("csText").textContent = "";
+    typing = setInterval(() => { n += 2; $("csText").textContent = full.slice(0, n); if(n >= full.length) { clearInterval(typing); typing = null; } }, 22);
+    $("csNext").textContent = k === lines.length - 1 ? "Los geht's! ⚽" : "Weiter ▶";
+  };
+  const end = () => { clearInterval(typing); cs.classList.add("hidden"); onDone && onDone(); };
+  $("csNext").onclick = () => {
+    if(typing){ clearInterval(typing); typing = null; $("csText").textContent = full; return; }
+    k++; if(k >= lines.length) end(); else show();
+  };
+  $("csSkip").onclick = () => { if(lines.some(l => l.fx === "lightsout")) document.body.classList.add("lightsout"); end(); };
+  show(); $("csNext").focus();
+}
+
+const INTRO_LINES = [
+  {t:"Hoi zäme! Ich bin Ruedi, der Stadionwart. Das Spiel ist aus, die Fans sind heimgegangen – nur ihr seid noch da."},
+  {t:"*KLACK* … Oh nein. Die Zentralverriegelung! Das Flutlicht ist aus, und alle Tore sind zu.", fx:"lightsout"},
+  {t:"Das Ausgangstor lässt sich nur vom Penaltypunkt in der Mitte aus öffnen. Dafür braucht es einen 12-stelligen Code."},
+  {t:"An zwölf Orten im Stadion warten Leute mit kniffligen Fragen zu Fussballwetten. Für jede richtige Lösung bekommt ihr einen Buchstaben – und einen Sticker fürs Sammelalbum."},
+  {t:"Und denkt immer dran: Wer Wetten ANBIETET, hat ganz andere Pflichten als wer nur MITSPIELT. Viel Glück – ich halte euch auf der Anzeigetafel auf dem Laufenden!"}
+];
+
+/* ======================= Karte ======================= */
+function pinPos(i){ const a = (-90 + i*30) * Math.PI/180; return {x: 50 + 40.5*Math.cos(a), y: 50 + 39.5*Math.sin(a)}; }
+
+function renderMap(flash){
+  renderBoard(flash);
+  const n = solvedCount(), all = n === STATIONEN.length;
+  $("mapTitle").innerHTML = `<span class="half">${n < 6 ? "1. HALBZEIT" : all ? "FINALE" : "2. HALBZEIT"}</span>${esc(teamName())}`;
+  $("progress").textContent = all ? (S.unlocked ? "Penaltypunkt entsperrt – auf zum Penaltyschiessen! ⚽" : "Alle 12 Buchstaben! Ab zum Penaltypunkt in der Mitte 🔓") : `${n} von ${STATIONEN.length} Orten gelöst · VAR-Joker: ${S.jokers}`;
+  const pins = STATIONEN.map((s,i) => { const p = pinPos(i); return `
+    <button class="pin ${S.st[i].solved?"done":""}" style="left:${p.x}%;top:${p.y}%;--c1:${s.farben[0]};--c2:${s.farben[1]}" data-i="${i}" aria-label="Station ${i+1}: ${s.ort}${S.st[i].solved?" (gelöst)":""}">
+      <span class="dot">${avatar(s.avatar)}</span><span class="nr">${S.st[i].solved?"✓":i+1}</span><span class="lbl">${s.ort}</span></button>`; }).join("");
+  const fin = `<button class="pin final ${all?"ready":""}" style="left:50%;top:50%" id="finalPin" aria-label="Penaltypunkt: letzte Station">
+      <span class="dot">${S.unlocked ? BALL : `<svg viewBox="0 0 100 100"><path d="M35 50 V36 Q35 20 50 20 Q65 20 65 36 V50" fill="none" stroke="${all?"#1b1f1c":"#bbb"}" stroke-width="8"/><rect x="25" y="48" width="50" height="40" rx="8" fill="${all?"#1b1f1c":"#f5c542"}"/></svg>`}</span>
+      <span class="lbl">Penaltypunkt</span></button>`;
+  $("map").innerHTML = mapSvg() + pins + fin;
+  $("map").querySelectorAll(".pin[data-i]").forEach(b => b.onclick = () => openStation(+b.dataset.i));
+  $("finalPin").onclick = openFinalStation;
+  $("stationlist").innerHTML = STATIONEN.map((s,i) => `
+    <button class="${S.st[i].solved?"done":""}" data-i="${i}"><span class="n">${S.st[i].solved?"✓":i+1}</span><span>${s.ort}<small>${s.person} · ${s.thema}</small></span></button>`).join("")
+    + `<button class="finalbtn" id="finalList"><span class="n">⚽</span><span>Penaltypunkt<small>Letzte Station – Code nötig</small></span></button>`;
+  $("stationlist").querySelectorAll("button[data-i]").forEach(b => b.onclick = () => openStation(+b.dataset.i));
+  $("finalList").onclick = openFinalStation;
+  showOnly("mapView");
+  if(n >= 6 && !S.halftime){ S.halftime = true; save(); setTimeout(showHalftime, 500); }
+}
+
+function showHalftime(){
+  sfx.longwhistle(); ticker("HALBZEIT! " + teamName() + " führt mit " + totalPoints() + " Punkten");
+  openModal(`<div class="center">
+    <div style="width:120px;height:120px;margin:0 auto;border-radius:24px;overflow:hidden;background:linear-gradient(160deg,#f39c12,#a35f00)">${avatar(RUEDI)}</div>
+    <h2 style="margin-top:12px">⏸️ Halbzeit!</h2>
+    <p class="lead">Ruedi bringt euch einen Pausentee: «Stark! Sechs Buchstaben habt ihr schon. Die zweite Halbzeit wird anspruchsvoller – Serverraum, Schiri-Kabine, Rechtsabteilung …»</p></div>
+    <div class="stats"><div class="stat led"><small>PUNKTE</small><span>${totalPoints()}</span></div><div class="stat led"><small>ZEIT</small><span>${fmt(Date.now()-S.start)}</span></div><div class="stat led"><small>GELBE KARTEN</small><span>${totalGelb()}</span></div><div class="stat led"><small>JOKER ÜBRIG</small><span>${S.jokers}</span></div></div>
+    <div class="boxed"><b>📰 Pausen-Fakt aus der Praxis</b><br>Im Auftrag der Gespa versuchten 16- und 17-Jährige 2026 in 200 Verkaufsstellen, Sportwetten zu kaufen. In <b>47,5 %</b> der Fälle klappte es – an Selbstbedienungsgeräten sogar in <b>66,7 %</b>. Der Jugendschutz funktioniert also noch nicht überall.
+    <p class="hint" style="margin:6px 0 0">Quelle: Gespa-Medienmitteilung vom 15.7.2026</p></div>
+    <div class="stationactions" style="justify-content:center"><button class="btn" id="secondHalf">▶ Zweite Halbzeit anpfeifen</button></div>`);
+  $("secondHalf").onclick = () => { closeModal(); sfx.whistle(); };
+}
+
+/* ======================= Station ======================= */
+let cur = null;
+function openStation(i){
+  const s = STATIONEN[i], st = S.st[i]; cur = i;
+  const rc = {Anbieten:"anbieten",Teilnahme:"teilnahme",Werbung:"werbung",Gemischt:"gemischt","Behörde/Internetanbieter":"behoerde",Wissen:""}[s.rolle] || "";
+  const typName = {idcheck:"Ausweiskontrolle",sort:"Sortieren",website:"Website-Check",adcheck:"Werbe-Check",stories:"Story-Check",chat:"Live-Chat",netblock:"Netzsperre",judge:"Fälle beurteilen",match:"Paragraphen-Puzzle",timeline:"Zeitstrahl",quiz:"Faktencheck"}[s.typ];
+  showOnly("stationView");
+  $("stationView").innerHTML = `
+    <div class="scene">
+      <div class="portrait" style="--c1:${s.farben[0]};--c2:${s.farben[1]}">${avatar(s.avatar)}<div class="nameplate">${s.person}</div><div class="pbadge">${ICONS[s.icon]||""}</div></div>
+      <div>
+        <h2>Station ${i+1}: ${s.ort}</h2>
+        <div class="meta"><span class="pill type">${typName}</span><span class="pill">${s.thema}</span><span class="pill ${rc}">Rolle: ${s.rolle}</span></div>
+        <div class="bubble"><div class="who">💬 ${s.person}</div>${s.intro}</div>
+        <div class="task"><span>🎯</span><div>${s.aufgabe}</div></div>
+      </div>
+    </div>
+    <div class="puzzle" id="puzzle"></div>
+    <div class="feedback" id="fb"></div>
+    <div class="stationactions">
+      <button class="btn blue small" id="varBtn">📺 VAR-Joker (${S.jokers})</button>
+      <button class="btn ghost small" id="backBtn">← Zur Stadionkarte</button>
+    </div>`;
+  $("backBtn").onclick = () => renderMap();
+  $("varBtn").onclick = useJoker;
+  ticker(`${teamName()} betritt Station ${i+1}: ${s.ort}`);
+  TYPES[s.typ](s, { fail, win, el: $("puzzle") });
+  if(st.solved){ cleanup(); $("puzzle").classList.add("locked"); showSolved(i, false); }
+  updateVarBtn();
+}
+function updateVarBtn(){
+  const st = S.st[cur], b = $("varBtn"); if(!b) return;
+  b.textContent = st.joker && !st.solved ? "📺 Hinweis angezeigt" : `📺 VAR-Joker (${S.jokers})`;
+  b.disabled = st.solved || st.joker || S.jokers <= 0;
+}
+function useJoker(){
+  const s = STATIONEN[cur], st = S.st[cur];
+  if(st.joker || st.solved || S.jokers <= 0) return;
+  S.jokers--; st.joker = true; save(); sfx.var(); ticker(`VAR-Check für ${teamName()} an Station ${cur+1}`);
+  const fb = $("fb"); fb.className = "feedback show var";
+  fb.innerHTML = `${VAR_ICON}<div><h3>VAR-Check: Hinweis vom Videoschiri</h3><p>${s.hinweis}</p><p class="hint">−${PUNKTE.joker} Punkte für diese Station.</p></div>`;
+  updateVarBtn();
+}
+function fail(msg){
+  const st = S.st[cur]; st.gelb++; save(); sfx.bad();
+  ticker(`Gelbe Karte für ${teamName()} an Station ${cur+1}!`);
+  const fb = $("fb"); fb.className = "feedback"; void fb.offsetWidth; fb.className = "feedback show bad";
+  fb.innerHTML = `${CARD_YELLOW}<div><h3>Gelbe Karte!</h3><p>${msg || "Das stimmt noch nicht."}</p><p class="hint">Du kannst es gleich nochmals versuchen. (−${PUNKTE.gelb} Punkte)</p></div>`;
+}
+function win(){
+  const st = S.st[cur]; if(st.solved) return;
+  cleanup();
+  st.solved = true;
+  st.punkte = Math.max(PUNKTE.minimum, PUNKTE.basis - st.gelb*PUNKTE.gelb - (st.joker?PUNKTE.joker:0));
+  save(); sfx.ok(); renderBoard(cur);
+  ticker(`TOOOR! ${teamName()} knackt Station ${cur+1} – Buchstabe ${STATIONEN[cur].letter}! +${st.punkte} Punkte`);
+  $("puzzle").classList.add("locked");
+  showSolved(cur, true); updateVarBtn();
+  if(solvedCount() === STATIONEN.length) setTimeout(() => toast("Alle 12 Buchstaben! Ab zum Penaltypunkt 🔓"), 700);
+}
+function showSolved(i, fresh){
+  const s = STATIONEN[i], st = S.st[i], fb = $("fb");
+  fb.className = "feedback show ok";
+  fb.innerHTML = `${CARD_GREEN}<div>
+    <h3>${fresh?"Richtig gelöst!":"Bereits gelöst."} Dein Buchstabe: <span class="letter">${s.letter}</span><span class="points">+${st.punkte} Pkt.</span></h3>
+    <p>${s.erklaerung}</p>
+    <p class="stickergot">🎴 ${fresh?"Neuer Sticker":"Sticker"} im Album: <b>${s.sticker.titel}</b> <button class="btn small dark" id="seeSticker" style="margin-left:auto">Ansehen</button></p>
+    <p class="source">📖 ${s.quelle} – <a href="${s.link}" target="_blank" rel="noopener">zur Quelle</a></p></div>`;
+  $("seeSticker").onclick = () => openAlbum(i);
+  const back = $("backBtn"); back.className = "btn"; back.textContent = "Buchstabe einsammeln → Karte";
+  back.onclick = () => renderMap(fresh ? i : undefined);
+  if(fresh) fb.scrollIntoView({behavior:"smooth", block:"center"});
+}
+
+/* ======================= Stationstypen ======================= */
+function ageOn(geb, day){ const [d,m,y] = geb.split(".").map(Number); let a = day.getFullYear() - y; if(day.getMonth()+1 < m || (day.getMonth()+1 === m && day.getDate() < d)) a--; return a; }
+function bindToggles(root, ans, numeric){
+  root.querySelectorAll(".toggle").forEach(b => b.onclick = () => {
+    const j = +b.dataset.j; ans[j] = numeric ? +b.dataset.v : b.dataset.v;
+    root.querySelectorAll(`.toggle[data-j="${j}"]`).forEach(x => x.setAttribute("aria-pressed", x === b));
+    const box = $("jq"+j); if(box) box.classList.remove("wrong"); sfx.small();
+  });
+}
+function clearFb(){ const fb = $("fb"); if(fb && !fb.classList.contains("var")) fb.className = "feedback"; }
+
+const TYPES = {
+  idcheck(s, api){
+    let k = 0;
+    const render = () => {
+      if(k >= s.kunden.length) return api.win();
+      const c = s.kunden[k];
+      api.el.innerHTML = `
+        <div class="daybar"><span>📅 Heute: ${SPIELTAG_TEXT}</span><span class="progressdots">${s.kunden.map((_,j)=>`<i class="${j<k?"ok":j===k?"now":""}"></i>`).join("")}</span></div>
+        <div class="customer">${avatar(c.avatar)}
+          <div><div class="bubble" style="padding:10px 14px">«${c.sagt}»</div>
+            <div class="idcard"><div class="ph">${avatar(c.avatar)}</div>
+              <div><div class="flag">IDENTITÄTSKARTE · MUSTER</div><div class="k">Name</div><div class="v">${c.name}</div><div class="k">Geburtsdatum</div><div class="v">${c.geb}</div></div></div></div>
+        </div>
+        <div class="stationactions"><button class="btn ok" id="sell">✓ Verkaufen</button><button class="btn bad" id="deny">✗ Ablehnen</button></div>`;
+      const decide = sell => {
+        const age = ageOn(c.geb, SPIELTAG), ok = age >= 18, vn = c.name.split(" ")[0];
+        if(sell === ok){ sfx.small(); clearFb(); k++; render(); }
+        else api.fail(sell ? `${vn} ist am Spieltag erst ${age} Jahre alt. Rechne nochmals nach!` : `${vn} ist am Spieltag ${age} Jahre alt – und darf damit einen Sporttip kaufen.`);
+      };
+      $("sell").onclick = () => decide(true); $("deny").onclick = () => decide(false);
+    };
+    render();
+  },
+
+  sort(s, api){
+    const place = s.items.map(() => null); let sel = null;
+    const render = () => {
+      const chip = (it,j) => `<button class="chip ${sel===j?"sel":""}" draggable="true" data-j="${j}">${it.t}</button>`;
+      api.el.innerHTML = `
+        <div class="tray" data-b="">${s.items.map((it,j)=>place[j]===null?chip(it,j):"").join("") || '<span class="hint">Alle Karten verteilt – jetzt prüfen!</span>'}</div>
+        <div class="bins">
+          <div class="bin a" data-b="a"><h4>🏪 ${s.bins.a}</h4>${s.items.map((it,j)=>place[j]==="a"?chip(it,j):"").join("")}</div>
+          <div class="bin t" data-b="t"><h4>🙋 ${s.bins.t}</h4>${s.items.map((it,j)=>place[j]==="t"?chip(it,j):"").join("")}</div>
+        </div>
+        <div class="stationactions"><button class="btn" id="checkSort" ${place.includes(null)?"disabled":""}>Zuordnung prüfen</button></div>`;
+      api.el.querySelectorAll(".chip").forEach(c => {
+        c.onclick = e => { e.stopPropagation(); const j = +c.dataset.j, target = c.parentElement.dataset.b || null;
+          if(sel !== null && sel !== j && place[sel] !== target){ place[sel] = target; sel = null; sfx.small(); } else sel = (sel === j) ? null : j; render(); };
+        c.ondragstart = e => e.dataTransfer.setData("text/plain", c.dataset.j);
+      });
+      api.el.querySelectorAll(".bin,.tray").forEach(b => {
+        b.onclick = () => { if(sel === null) return; place[sel] = b.dataset.b || null; sel = null; sfx.small(); render(); };
+        b.ondragover = e => { e.preventDefault(); b.classList.add("over"); };
+        b.ondragleave = () => b.classList.remove("over");
+        b.ondrop = e => { e.preventDefault(); place[+e.dataTransfer.getData("text/plain")] = b.dataset.b || null; sel = null; sfx.small(); render(); };
+      });
+      $("checkSort").onclick = () => {
+        const wrong = s.items.map((it,j) => place[j] !== it.b ? j : -1).filter(j => j >= 0);
+        if(!wrong.length) return api.win();
+        wrong.forEach(j => place[j] = null); render();
+        api.fail(`${wrong.length} ${wrong.length===1?"Karte war":"Karten waren"} in der falschen Kiste und ${wrong.length===1?"liegt":"liegen"} wieder oben. Wer stellt das Angebot bereit, wer setzt selbst?`);
+      };
+    };
+    render();
+  },
+
+  website(s, api){
+    const ans = s.fragen.map(() => null);
+    api.el.innerHTML = `
+      <div class="browser"><div class="bar"><i></i><i></i><i></i><span class="url">🔒 ${s.seite.url}</span></div>
+        <div class="site"><span class="stamp">FIKTIV</span><div class="logo">⚡ ${s.seite.name}</div>
+          <div class="hero2"><b>🇨🇭 Super League Spezialquoten!</b><br>Jetzt in CHF einzahlen und 100 % Willkommensbonus sichern.</div>
+          <div class="odds"><span>Thun – Basel 2.10</span><span>YB – Lugano 1.65</span><span>Servette – FCZ 2.40</span></div>
+          <div class="foot">© BetBlitz Ltd. · Valletta, Malta · Lizenziert in Malta · Spielen ab 18</div></div></div>
+      <div class="tools">${s.tools.map((t,j)=>`<button class="btn blue small" data-t="${j}">${t.label}</button>`).join("")}</div>
+      <div id="reveals"></div>
+      <h3>Dein Urteil</h3>
+      <div class="judges">${s.fragen.map((f,j)=>`
+        <div class="judge" id="jq${j}"><span class="pill ${f.wer==="Anbieten"?"anbieten":"teilnahme"}">${f.wer}</span><div class="t" style="margin-top:6px">${f.t}</div>
+          <div class="opts"><button class="toggle z" data-j="${j}" data-v="z" aria-pressed="false">${f.labels.z}</button><button class="toggle u" data-j="${j}" data-v="u" aria-pressed="false">${f.labels.u}</button></div></div>`).join("")}</div>
+      <div class="stationactions"><button class="btn" id="checkWeb">Urteil abgeben</button></div>`;
+    api.el.querySelectorAll("[data-t]").forEach(b => b.onclick = () => {
+      b.disabled = true; sfx.small(); const d = document.createElement("div"); d.className = "reveal"; d.innerHTML = s.tools[+b.dataset.t].text; $("reveals").appendChild(d); });
+    bindToggles(api.el, ans);
+    $("checkWeb").onclick = () => {
+      if(ans.includes(null)) return toast("Bitte beide Fragen beantworten.");
+      const wrong = s.fragen.map((f,j) => ans[j] !== f.a ? j : -1).filter(j => j >= 0);
+      s.fragen.forEach((_,j) => $("jq"+j).classList.toggle("wrong", wrong.includes(j)));
+      if(!wrong.length) return api.win();
+      api.fail(wrong.length === 2 ? "Beide Urteile stimmen nicht." : `Das Urteil zu «${s.fragen[wrong[0]].wer}» stimmt nicht. Unterscheide genau zwischen Anbieten und Teilnehmen.`);
+    };
+  },
+
+  adcheck(s, api){
+    const spots = [
+      {id:"logo",x:6,y:3,w:88,h:9,bad:false,name:"Logo des Anbieters"},
+      {id:"bild",x:6,y:14,w:88,h:33,bad:true,name:"Pausenplatz mit Schulranzen"},
+      {id:"slogan",x:6,y:48,w:88,h:12,bad:true,name:"Slogan «Gspänli in der grossen Pause»"},
+      {id:"gewinn",x:14,y:66,w:72,h:10,bad:true,name:"«100 % sicherer Gewinn»"},
+      {id:"ab18",x:6,y:79,w:28,h:9,bad:false,name:"Hinweis «ab 18»"},
+      {id:"hilfe",x:36,y:79,w:58,h:15,bad:false,name:"Hinweis auf Hilfe"}
+    ];
+    const marked = new Set();
+    api.el.innerHTML = `
+      <div class="phone"><div class="screen">
+        <svg viewBox="0 0 300 520" aria-hidden="true">
+          <rect width="300" height="520" fill="#7fc4ef"/>
+          <rect x="18" y="16" width="264" height="42" rx="10" fill="#fff"/>
+          <text x="150" y="44" text-anchor="middle" font-family="Bebas Neue, Impact" font-size="26" fill="#e67e22">⚽ TIPPTOPP <tspan font-size="12" fill="#999">(fiktiv)</tspan></text>
+          <rect x="18" y="72" width="264" height="170" rx="12" fill="#cfe9b8"/><rect x="18" y="72" width="264" height="70" rx="12" fill="#a6d8f5"/>
+          <rect x="40" y="110" width="90" height="60" fill="#e9d7b5"/><rect x="40" y="100" width="90" height="14" fill="#c0392b"/>
+          <text x="85" y="145" text-anchor="middle" font-size="11" font-weight="800" fill="#7a4a1a">SCHULHAUS</text>
+          <rect x="160" y="170" width="40" height="50" rx="8" fill="#e74c3c"/><rect x="167" y="160" width="26" height="14" rx="6" fill="none" stroke="#c0392b" stroke-width="4"/>
+          <rect x="210" y="178" width="36" height="44" rx="8" fill="#3498db"/><rect x="216" y="168" width="24" height="14" rx="6" fill="none" stroke="#2471a3" stroke-width="4"/>
+          <circle cx="80" cy="212" r="16" fill="#fff" stroke="#222" stroke-width="2"/>
+          <text x="150" y="268" text-anchor="middle" font-size="19" font-weight="800" fill="#1b1f1c">Wette mit deinen Gspänli</text>
+          <text x="150" y="292" text-anchor="middle" font-size="19" font-weight="800" fill="#1b1f1c">in der grossen Pause! 🎒</text>
+          <rect x="45" y="346" width="210" height="42" rx="21" fill="#f5c542"/><text x="150" y="373" text-anchor="middle" font-size="16" font-weight="800" fill="#1b1f1c">100 % sicherer Gewinn!</text>
+          <rect x="20" y="412" width="80" height="40" rx="8" fill="#1b1f1c"/><text x="60" y="438" text-anchor="middle" font-size="16" font-weight="800" fill="#fff">ab 18</text>
+          <text x="112" y="428" font-size="11" fill="#1b1f1c">Spiel verantwortungsvoll.</text><text x="112" y="444" font-size="11" fill="#1b1f1c">Hilfe: sos-spielsucht.ch</text><text x="112" y="460" font-size="11" fill="#1b1f1c">0800 040 080</text>
+        </svg>
+        ${spots.map(p => `<button class="hot" data-id="${p.id}" style="left:${p.x}%;top:${p.y}%;width:${p.w}%;height:${p.h}%" aria-pressed="false" aria-label="${p.name}">${p.name}</button>`).join("")}
+      </div></div>
+      <div class="counter" id="adcount">0 Stellen markiert</div>
+      <div class="stationactions" style="justify-content:center"><button class="btn" id="checkAd">Prüfung abschliessen</button></div>`;
+    api.el.querySelectorAll(".hot").forEach(h => h.onclick = () => {
+      const id = h.dataset.id; marked.has(id) ? marked.delete(id) : marked.add(id);
+      h.classList.toggle("mark", marked.has(id)); h.setAttribute("aria-pressed", marked.has(id));
+      $("adcount").textContent = `${marked.size} ${marked.size===1?"Stelle":"Stellen"} markiert`; sfx.small(); });
+    $("checkAd").onclick = () => {
+      const fp = spots.filter(p => !p.bad && marked.has(p.id)), missed = spots.filter(p => p.bad && !marked.has(p.id));
+      if(!fp.length && !missed.length) return api.win();
+      let msg = ""; if(fp.length) msg += `Unproblematisch ist: ${fp.map(p=>"«"+p.name+"»").join(", ")}. `;
+      if(missed.length) msg += `Es ${missed.length===1?"fehlt noch ein Problem":"fehlen noch "+missed.length+" Probleme"}.`;
+      api.fail(msg);
+    };
+  },
+
+  stories(s, api){
+    const ans = s.stories.map(() => null);
+    api.el.innerHTML = `<div class="stories">${s.stories.map((st,j) => `
+      <div class="story" id="jq${j}"><div class="sv ${st.cls}">
+          <div><div class="bars"><i></i><i></i></div><div class="user"><span class="mini">${avatar(s.avatar)}</span>${st.user} · Story ${j+1}</div></div>
+          <div><div class="smsg">${st.msg}</div>${st.code?`<div class="code">CODE: ${st.code}</div>`:""}</div>
+          <div style="font-size:.75rem;opacity:.9">ℹ️ ${st.meta}</div></div>
+        <div class="judgebox"><div class="opts" style="margin:0"><button class="toggle z" data-j="${j}" data-v="z" aria-pressed="false">Zulässig</button><button class="toggle u" data-j="${j}" data-v="u" aria-pressed="false">Unzulässig</button></div></div>
+      </div>`).join("")}</div>
+      <div class="stationactions"><button class="btn" id="checkStories">Urteil abgeben</button></div>`;
+    bindToggles(api.el, ans);
+    $("checkStories").onclick = () => {
+      if(ans.includes(null)) return toast("Bitte beide Stories beurteilen.");
+      const wrong = s.stories.map((st,j) => ans[j] !== st.a ? j : -1).filter(j => j >= 0);
+      s.stories.forEach((_,j) => $("jq"+j).style.borderColor = wrong.includes(j) ? "var(--bad)" : "#222");
+      if(!wrong.length) return api.win();
+      api.fail(`Story ${wrong.map(j=>j+1).join(" und ")} ist falsch beurteilt. Macht Jan Werbung – und wenn ja, wofür?`);
+    };
+  },
+
+  chat(s, api){
+    let step = 0, alive = true; cleanupFn = () => { alive = false; };
+    api.el.innerHTML = `<div class="chat" id="chatlog" aria-live="polite"></div><div class="replies" id="replies"></div>`;
+    const log = $("chatlog");
+    const ok = () => alive && document.body.contains(log);
+    const add = (cls, text, from) => { if(!ok()) return; const m = document.createElement("div"); m.className = "msg " + cls; m.innerHTML = (from?`<span class="from">${from}</span>`:"") + text; log.appendChild(m); log.scrollTop = log.scrollHeight; };
+    const typing = cb => { if(!ok()) return; const t = document.createElement("div"); t.className = "typing"; t.innerHTML = "<i></i><i></i><i></i>"; log.appendChild(t); log.scrollTop = log.scrollHeight; setTimeout(() => { t.remove(); if(ok()) cb(); }, 700); };
+    const showStep = () => {
+      const c = s.chat[step];
+      typing(() => {
+        add("them", c.them, "Reto");
+        $("replies").innerHTML = shuffle(c.opts.map((o,j)=>j)).map(j => `<button data-j="${j}">${c.opts[j].t}</button>`).join("");
+        $("replies").querySelectorAll("button").forEach(b => b.onclick = () => {
+          const o = c.opts[+b.dataset.j];
+          if(!o.ok) return api.fail(o.why);
+          clearFb(); $("replies").innerHTML = ""; add("me", o.t, "Du (Kundendienst)"); sfx.small();
+          if(c.sys) setTimeout(() => add("sys", "🔎 " + c.sys), 400);
+          step++;
+          if(step < s.chat.length) setTimeout(() => ok() && showStep(), c.sys ? 900 : 400);
+          else typing(() => { add("them", c.end || "Danke.", "Reto"); setTimeout(() => ok() && api.win(), 500); });
+        });
+      });
+    };
+    showStep();
+  },
+
+  netblock(s, api){
+    let k = 0, t = null, left = 0;
+    const stop = () => { clearInterval(t); t = null; };
+    cleanupFn = stop;
+    const render = () => {
+      stop();
+      if(k >= s.sites.length) return api.win();
+      const w = s.sites[k];
+      api.el.innerHTML = `
+        <div class="netbar"><span>🛰️ Datenverkehr · Paket ${k+1} von ${s.sites.length}</span><span class="progressdots">${s.sites.map((_,j)=>`<i class="${j<k?"ok":j===k?"now":""}"></i>`).join("")}</span></div>
+        <div class="packet"><div class="ph"><span class="plogo" style="background:${w.farbe}">${w.logo}</span><span class="purl">${w.url}</span></div>
+          <dl>${w.rows.map(r=>`<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join("")}</dl></div>
+        <div class="timer" aria-hidden="true"><i id="tbar"></i></div>
+        <div class="stationactions"><button class="btn ok" id="allow">✅ Zugang offen lassen</button><button class="btn bad" id="block">⛔ Sperren</button></div>`;
+      left = s.zeit;
+      t = setInterval(() => {
+        left -= .1; const bar = $("tbar"); if(bar) bar.style.width = Math.max(0, left/s.zeit*100) + "%";
+        if(left <= 0){ stop(); api.fail("Zeit abgelaufen! Das Datenpaket wartet noch – entscheide jetzt."); }
+      }, 100);
+      const decide = blk => {
+        if(blk === w.block){ sfx.small(); clearFb(); k++; render(); }
+        else api.fail(w.why);
+      };
+      $("allow").onclick = () => decide(false); $("block").onclick = () => decide(true);
+    };
+    render();
+  },
+
+  judge(s, api){
+    const ans = s.items.map(() => null);
+    api.el.innerHTML = `${s.vorspann || ""}<div class="judges" style="margin-top:${s.vorspann?"14px":"0"}">${s.items.map((it,j) => { const L = it.labels || {z:"Zulässig",u:"Unzulässig"}; return `
+      <div class="judge" id="jq${j}"><div class="t">${it.t}</div><div>${it.text}</div>
+        <div class="opts"><button class="toggle z" data-j="${j}" data-v="z" aria-pressed="false">${L.z}</button><button class="toggle u" data-j="${j}" data-v="u" aria-pressed="false">${L.u}</button></div></div>`; }).join("")}</div>
+      <div class="stationactions"><button class="btn" id="checkJudge">Urteil abgeben</button></div>`;
+    bindToggles(api.el, ans);
+    $("checkJudge").onclick = () => {
+      if(ans.includes(null)) return toast("Bitte alle Punkte beurteilen.");
+      const wrong = s.items.map((it,j) => ans[j] !== it.a ? j : -1).filter(j => j >= 0);
+      s.items.forEach((_,j) => $("jq"+j).classList.toggle("wrong", wrong.includes(j)));
+      if(!wrong.length) return api.win();
+      api.fail(`${wrong.length===1?"Ein Urteil ist":wrong.length+" Urteile sind"} falsch (rot markiert).`);
+    };
+  },
+
+  match(s, api){
+    const asg = s.cases.map(() => null); let sel = 0;
+    const artById = id => s.arts.find(a => a.id === id);
+    const render = () => {
+      api.el.innerHTML = `<div class="matchgrid">
+        <div><div class="colhead">📁 Fälle</div>${s.cases.map((c,j)=>`<button class="mcase ${sel===j?"sel":""}" id="jq${j}" data-j="${j}">${c.t}<br><span class="asg ${asg[j]?"set":""}">${asg[j]?artById(asg[j]).t:"– noch kein Artikel –"}</span></button>`).join("")}</div>
+        <div><div class="colhead">📜 Rechtsgrundlagen</div><div class="marts">${s.arts.map(a=>`<button class="mart" data-a="${a.id}" ${sel===null?"disabled":""}><b>${a.t}</b>${a.d}</button>`).join("")}</div></div>
+      </div>
+      <div class="stationactions"><button class="btn" id="checkMatch" ${asg.includes(null)?"disabled":""}>Akten prüfen</button></div>`;
+      api.el.querySelectorAll(".mcase").forEach(b => b.onclick = () => { sel = +b.dataset.j; sfx.small(); render(); });
+      api.el.querySelectorAll(".mart").forEach(b => b.onclick = () => {
+        if(sel === null) return; asg[sel] = b.dataset.a; sfx.small();
+        const next = asg.findIndex((x,j) => x === null && j !== sel); sel = next >= 0 ? next : null; render(); });
+      $("checkMatch").onclick = () => {
+        const wrong = s.cases.map((c,j) => asg[j] !== c.a ? j : -1).filter(j => j >= 0);
+        if(!wrong.length) return api.win();
+        wrong.forEach(j => asg[j] = null); sel = wrong[0]; render();
+        wrong.forEach(j => $("jq"+j).classList.add("wrong"));
+        api.fail(`${wrong.length===1?"Ein Fall war":wrong.length+" Fälle waren"} falsch zugeordnet (rot markiert). Ordne sie neu zu.`);
+      };
+    };
+    render();
+  },
+
+  timeline(s, api){
+    let order = s.start.slice(), dragFrom = null;
+    const render = (reveal) => {
+      api.el.innerHTML = `<ol class="tl">${order.map((idx,p)=>`
+        <li class="tlitem" draggable="${!reveal}" data-p="${p}">${reveal?`<span class="year">${s.items[idx].j}</span>`:`<span class="tlpos">${p+1}</span>`}<span class="tltext">${s.items[idx].t}</span>
+        ${reveal?"":`<span class="tlbtns"><button class="mv" data-p="${p}" data-d="-1" aria-label="nach oben" ${p===0?"disabled":""}>▲</button><button class="mv" data-p="${p}" data-d="1" aria-label="nach unten" ${p===order.length-1?"disabled":""}>▼</button></span>`}</li>`).join("")}</ol>
+        ${reveal?"":`<div class="stationactions"><button class="btn" id="checkTl">Reihenfolge prüfen</button></div>`}`;
+      if(reveal) return;
+      api.el.querySelectorAll(".mv").forEach(b => b.onclick = () => { const p = +b.dataset.p, q = p + +b.dataset.d; [order[p],order[q]] = [order[q],order[p]]; sfx.small(); render(); });
+      api.el.querySelectorAll(".tlitem").forEach(li => {
+        li.ondragstart = () => { dragFrom = +li.dataset.p; li.classList.add("drag"); };
+        li.ondragend = () => li.classList.remove("drag");
+        li.ondragover = e => e.preventDefault();
+        li.ondrop = e => { e.preventDefault(); const to = +li.dataset.p; if(dragFrom === null || dragFrom === to) return; const [m] = order.splice(dragFrom,1); order.splice(to,0,m); dragFrom = null; sfx.small(); render(); };
+      });
+      $("checkTl").onclick = () => {
+        const wrong = order.map((idx,p) => idx !== p ? p : -1).filter(p => p >= 0);
+        if(!wrong.length){ render(true); return api.win(); }
+        api.el.querySelectorAll(".tlitem").forEach((li,p) => li.classList.toggle("wrong", wrong.includes(p)));
+        api.fail(`${wrong.length} Tafeln stehen noch am falschen Platz (rot markiert).`);
+      };
+    };
+    render(false);
+  },
+
+  quiz(s, api){
+    const ans = s.fragen.map(() => null);
+    api.el.innerHTML = `<div class="quiz">${s.fragen.map((f,j) => `
+      <div class="q" id="jq${j}"><div class="mic">🎤 Frage ${j+1} von ${s.fragen.length}</div><div class="t">${f.t}</div>
+        <div class="opts">${f.opts.map((o,k)=>`<button class="toggle q" data-j="${j}" data-v="${k}" aria-pressed="false">${o}</button>`).join("")}</div></div>`).join("")}</div>
+      <div class="stationactions"><button class="btn" id="checkQuiz">Antworten abgeben</button></div>`;
+    bindToggles(api.el, ans, true);
+    $("checkQuiz").onclick = () => {
+      if(ans.includes(null)) return toast("Bitte alle Fragen beantworten.");
+      const wrong = s.fragen.map((f,j) => ans[j] !== f.a ? j : -1).filter(j => j >= 0);
+      s.fragen.forEach((_,j) => $("jq"+j).classList.toggle("wrong", wrong.includes(j)));
+      if(!wrong.length) return api.win();
+      api.fail(`Mia hat nachgeprüft: ${wrong.length===1?"Eine Antwort stimmt":wrong.length+" Antworten stimmen"} nicht (rot markiert).`);
+    };
+  }
+};
+
+/* ======================= Letzte Station: Code + Penaltys ======================= */
+function openFinalStation(){ if(S.won) return showWin(); if(S.unlocked) return openPenalty(); openLock(); }
+
+function openLock(){
+  const n = STATIONEN.length;
+  showOnly("lockView");
+  $("lockView").innerHTML = `
+    <div class="lockwrap"><div class="center">${PADLOCK}</div>
+      <div><h2>Der Penaltypunkt</h2>
+        <p>Hier, mitten auf dem Rasen, steckt die Steuerung für das Ausgangstor. Gebt den ${n}-stelligen Code ein – die Buchstaben der Stationen 1 bis ${n} in der richtigen Reihenfolge. Die Anzeigetafel hilft!</p>
+        <div class="codeinputs" id="codeinputs">${Array.from({length:n},(_,k)=>`<input maxlength="1" autocomplete="off" aria-label="Buchstabe ${k+1}" class="${k===6?"gap":""}">`).join("")}</div>
+        <div class="stationactions"><button class="btn" id="tryCode">🔓 Entsperren</button><button class="btn ghost" id="back2">← Stadionkarte</button></div>
+        <div class="feedback" id="fbFinal"></div></div></div>`;
+  const inputs = [...$("codeinputs").querySelectorAll("input")];
+  inputs.forEach((inp,k) => {
+    inp.addEventListener("input", () => { inp.value = inp.value.toUpperCase().replace(/[^A-Z]/g,""); if(inp.value && inputs[k+1]) inputs[k+1].focus(); });
+    inp.addEventListener("keydown", e => { if(e.key==="Backspace" && !inp.value && inputs[k-1]) inputs[k-1].focus(); if(e.key==="Enter") checkCode(); });
+    inp.addEventListener("paste", e => { e.preventDefault(); const t = (e.clipboardData.getData("text")||"").toUpperCase().replace(/[^A-Z]/g,""); [...t].slice(0,n-k).forEach((c,j)=>inputs[k+j].value=c); inputs[Math.min(k+t.length,n-1)].focus(); });
+  });
+  inputs[0].focus();
+  $("back2").onclick = () => renderMap();
+  $("tryCode").onclick = checkCode;
+}
+function checkCode(){
+  const val = [...$("codeinputs").querySelectorAll("input")].map(i=>i.value).join("").toUpperCase();
+  if(val === LOESUNG){
+    S.unlocked = true; save(); $("padlock").classList.add("open"); sfx.longwhistle();
+    ticker(`Code ${LOESUNG} geknackt! ${teamName()} tritt zum Penaltyschiessen an`);
+    setTimeout(() => {
+      openModal(`<div class="center"><div style="width:120px;height:120px;margin:0 auto;border-radius:24px;overflow:hidden;background:linear-gradient(160deg,#f39c12,#a35f00)">${avatar(RUEDI)}</div>
+        <h2 style="margin-top:12px">SCHLUSSPFIFF … fast!</h2>
+        <p class="lead">«Der Code stimmt! Aber das Tor hat noch eine letzte Sicherung: Ihr müsst gegen unseren Goalie antreten. Verwandelt mindestens <b>3 von 5 Penaltys</b>. Jede Frage hat drei Antworten – schiesst in die Ecke mit der richtigen!»</p>
+        <div class="stationactions" style="justify-content:center"><button class="btn" id="toPen">⚽ Zum Penaltyschiessen</button></div></div>`);
+      $("toPen").onclick = () => { closeModal(); openPenalty(); };
+    }, 900);
+    return;
+  }
+  sfx.bad();
+  const fb = $("fbFinal"); fb.className = "feedback"; void fb.offsetWidth; fb.className = "feedback show bad";
+  fb.innerHTML = `${CARD_YELLOW}<div><h3>Gesperrt.</h3><p>${solvedCount() < STATIONEN.length ? `Euch fehlen noch ${STATIONEN.length - solvedCount()} Buchstaben. Geht zurück zur Stadionkarte.` : "Der Code stimmt noch nicht. Gebt die Buchstaben in der Reihenfolge der Stationsnummern ein."}</p></div>`;
+}
+
+let P = null;
+function openPenalty(){ P = {k:0, goals:0, res:[], qs:shuffle(PENALTY_POOL).slice(0,5), busy:false}; showOnly("penaltyView"); renderPenalty(); }
+function renderPenalty(){
+  const q = P.qs[P.k]; P.order = shuffle([0,1,2]);
+  const zx = [24,50,76], badge = ["A","B","C"];
+  $("penaltyView").innerHTML = `
+    <h2>⚽ Penaltyschiessen</h2>
+    <div class="pscore">${[0,1,2,3,4].map(j=>`<i class="${P.res[j]===true?"g":P.res[j]===false?"m":j===P.k?"now":""}">${P.res[j]===true?"⚽":P.res[j]===false?"✗":j+1}</i>`).join("")}<span style="margin-left:8px;font-weight:800">${P.goals} Tor${P.goals===1?"":"e"} · nötig: 3</span></div>
+    <div class="pq">Penalty ${P.k+1}/5: ${q.q}</div>
+    <div class="pbox" id="pbox">
+      <div class="goal">${GOAL}</div>
+      ${zx.map((x,z)=>`<button class="zone" data-z="${z}" style="left:${x-12.75}%" aria-label="Ecke ${badge[z]}: ${esc(q.opts[P.order[z]])}"><span class="zb">${badge[z]}</span></button>`).join("")}
+      <div class="keeper" id="keeper">${KEEPER}</div>
+      <div class="spot"></div>
+      <div class="pball" id="pball">${BALL}</div>
+      <div class="pmsg" id="pmsg"></div>
+    </div>
+    <div class="pans">${[0,1,2].map(z=>`<button data-z="${z}"><b>${badge[z]}</b>${q.opts[P.order[z]]}</button>`).join("")}</div>
+    <div class="feedback" id="pfb"></div>`;
+  $("penaltyView").querySelectorAll("[data-z]").forEach(b => b.onclick = () => shoot(+b.dataset.z));
+}
+function shoot(z){
+  if(P.busy) return; P.busy = true;
+  const q = P.qs[P.k], ok = P.order[z] === q.a, zx = [24,50,76];
+  $("penaltyView").querySelectorAll("[data-z]").forEach(b => b.disabled = true);
+  sfx.kick();
+  const ball = $("pball"), keeper = $("keeper");
+  const kz = ok ? (z === 1 ? (Math.random() < .5 ? 0 : 2) : (Math.random() < .5 ? 1 : 2 - z)) : z;
+  ball.style.left = zx[z] + "%"; ball.style.top = (z === 1 ? 26 : 32) + "%"; ball.style.transform = "translate(-50%,-50%) scale(.6) rotate(540deg)";
+  keeper.style.left = zx[kz] + "%";
+  keeper.style.transform = kz === 1 ? "translate(-50%,-14%)" : `translate(-50%,8%) rotate(${kz===0?-68:68}deg)`;
+  setTimeout(() => {
+    if(!ok){ ball.style.left = (zx[z] + (z===1?0:z===0?-10:10)) + "%"; ball.style.top = "70%"; ball.style.transform = "translate(-50%,-50%) scale(.75) rotate(720deg)"; }
+    const m = $("pmsg"); m.className = "pmsg" + (ok?" goal":""); m.innerHTML = `<span>${ok?"TOOOR!":"GEHALTEN!"}</span>`;
+    P.res[P.k] = ok; if(ok){ P.goals++; sfx.goal(); } else sfx.save();
+    ticker(ok ? `TOOOR für ${teamName()}! Penalty ${P.k+1} sitzt` : `Penalty ${P.k+1} gehalten! Der Goalie jubelt`);
+    $("penaltyView").querySelectorAll(".pans button").forEach(b => { const zz = +b.dataset.z; if(P.order[zz] === q.a) b.classList.add("right"); if(zz === z && !ok) b.classList.add("picked","wrongpick"); });
+    const fb = $("pfb"); fb.className = "feedback show " + (ok?"ok":"bad");
+    const last = P.k === 4;
+    fb.innerHTML = `${ok?CARD_GREEN:CARD_YELLOW}<div><h3>${ok?"Richtig!":"Leider falsch."}</h3><p>${q.ex}</p>
+      <div class="stationactions" style="margin-top:4px"><button class="btn" id="nextPen">${last?"Ergebnis ansehen":"Nächster Penalty ▶"}</button></div></div>`;
+    $("nextPen").onclick = () => { P.busy = false; P.k++; if(P.k < 5) renderPenalty(); else finishPenalty(); };
+    $("nextPen").focus();
+  }, 620);
+}
+function finishPenalty(){
+  if(P.goals >= 3){
+    S.penGoals = Math.max(S.penGoals, P.goals); S.won = true; if(!S.end) S.end = Date.now(); save(); renderBoard();
+    return showWin();
+  }
+  $("penaltyView").innerHTML = `<div class="center"><h2>Verlängerung!</h2>
+    <p class="lead">Nur ${P.goals} von 5 Penaltys verwandelt – das Tor bleibt noch zu. Ruedi meint: «Kopf hoch, neue Runde, neue Fragen!»</p>
+    <div class="stationactions" style="justify-content:center"><button class="btn" id="againPen">⚽ Nochmals antreten</button><button class="btn ghost" id="mapPen">Zur Stadionkarte</button></div></div>`;
+  $("againPen").onclick = openPenalty; $("mapPen").onclick = () => renderMap();
+}
+
+/* ======================= Sieg ======================= */
+function rangText(pts){ return pts >= MAXPTS*.9 ? "🏆 Schiedsrichter-Legende" : pts >= MAXPTS*.75 ? "🥇 Fair-Play-Profi" : pts >= MAXPTS*.55 ? "🥈 Solide Abwehr" : "🥉 Mutige Einwechselspieler"; }
+function getBest(){ try{ return JSON.parse(localStorage.getItem(BEST)) || []; }catch(e){ return []; } }
+function addBest(e){ const b = getBest(); b.push(e); b.sort((x,y) => y.pts - x.pts || x.ms - y.ms); try{ localStorage.setItem(BEST, JSON.stringify(b.slice(0,10))); }catch(_){} }
+function bestTable(highlight){
+  const b = getBest(); if(!b.length) return `<p class="hint">Noch keine Einträge – seid die Ersten!</p>`;
+  return `<table class="besttable"><tr><th>#</th><th>Team</th><th>Punkte</th><th>Zeit</th></tr>${b.slice(0,5).map((e,i)=>`<tr class="${highlight && e.id===highlight?"me":""}"><td>${i+1}</td><td>${esc(e.team)}</td><td>${e.pts}</td><td>${fmt(e.ms)}</td></tr>`).join("")}</table>`;
+}
+
+function showWin(){
+  clearInterval(timer); tick();
+  const pts = totalPoints(), ms = S.end - S.start, rang = rangText(pts);
+  if(!S.recorded){ S.recorded = Date.now(); addBest({id:S.recorded, team:teamName(), pts, ms}); save(); sfx.win(); confetti(); ticker(`SCHLUSSPFIFF! ${teamName()} ist frei – ${pts} Punkte`); }
+  document.body.classList.remove("lightsout");
+  showOnly("winView");
+  $("winView").innerHTML = `
+    <div class="center">${TROPHY}<h2>Schlusspfiff – ${esc(teamName())} ist frei!</h2>
+      <p class="lead">Das Ausgangstor schwingt auf, das Flutlicht geht wieder an. Euer Rang: <strong>${rang}</strong></p></div>
+    <div class="stats">
+      <div class="stat led"><small>PUNKTE</small><span>${pts}</span></div>
+      <div class="stat led"><small>ZEIT</small><span>${fmt(ms)}</span></div>
+      <div class="stat led"><small>GELBE KARTEN</small><span>${totalGelb()}</span></div>
+      <div class="stat led"><small>JOKER</small><span>${JOKER_TOTAL - S.jokers}</span></div>
+      <div class="stat led"><small>PENALTYS</small><span>${S.penGoals}/5</span></div>
+    </div>
+    <div class="stationactions" style="justify-content:center;margin-top:0">
+      <button class="btn" id="certBtn">🖨️ Urkunde drucken</button>
+      <button class="btn dark" id="albumBtn2">🎴 Sammelalbum ansehen</button>
+    </div>
+    <div class="introgrid" style="margin-top:20px">
+      <div><h3 style="margin-top:0">Das nehmt ihr mit</h3>
+        <ul class="learned">
+          <li><b>🏟️ Bewilligte Anbieter</b>Online, automatisiert oder in mehreren Kantonen angebotene Sportwetten dürfen nur Swisslos und die Loterie Romande veranstalten.</li>
+          <li><b>🔞 Mindestalter</b>Online-Grossspiele sind ab 18. Swisslos und Loterie Romande verlangen auch am Kiosk 18 Jahre – die Verkaufsstelle muss kontrollieren.</li>
+          <li><b>🌍 Ausländische Angebote</b>Anbieten ist verboten und strafbar, die Seiten werden gesperrt. Spielende sind nicht strafbar, verlieren aber jeden Schutz.</li>
+          <li><b>🛡️ Spielerschutz</b>Sozialkonzept, Spielsperren für alle Anbieter, Hinweis auf Hilfe – und Wettkampfmanipulation ist strafbar.</li>
+          <li><b>📣 Werbung</b>Nicht aufdringlich, nicht irreführend, nicht an Minderjährige – und nie für nicht bewilligte Angebote.</li>
+          <li><b>🏆 Privater Kreis</b>Ein Tippspiel unter Bekannten ohne Gewinnabschöpfung fällt nicht unter das Geldspielgesetz.</li>
+        </ul></div>
+      <div><h3 style="margin-top:0">🏆 Bestenliste</h3><div class="boxed">${bestTable(S.recorded)}</div><p class="hint">Gespeichert nur auf diesem Gerät.</p></div>
+    </div>
+    <h3>📝 Eure Rückmeldung zum Spiel</h3>
+    <p class="hint">Helft uns, das Spiel zu verbessern. Eure Antworten bleiben auf eurem Gerät – kopiert sie oder speichert sie als Datei und gebt sie uns.</p>
+    <div class="fbform">
+      ${starField("verst","Wie verständlich waren die Fälle und Erklärungen?")}
+      ${starField("bed","Wie einfach war die Bedienung?")}
+      ${starField("spass","Wie viel Spass hat das Spiel gemacht?")}
+      <div class="field" style="max-width:none"><label for="unklar"><b>Welche Station war am unklarsten?</b></label>
+        <select id="unklar"><option value="">– keine –</option>${STATIONEN.map((s,i)=>`<option>${i+1}. ${s.ort} (${s.thema})</option>`).join("")}<option>Penaltyschiessen</option></select></div>
+      <div class="field" style="max-width:none"><label for="kommentar"><b>Was war unklar oder was sollen wir verbessern?</b></label>
+        <textarea id="kommentar" placeholder="z. B. Bei Station 7 war nicht klar, dass …"></textarea></div>
+      <div class="stationactions" style="margin-top:0"><button class="btn" id="copyFb">📋 Rückmeldung kopieren</button><button class="btn ghost" id="dlFb">💾 Als Textdatei speichern</button></div>
+    </div>
+    <h3>Quellen</h3>
+    <ul class="sources">${QUELLEN.map(q=>`<li><a href="${q[1]}" target="_blank" rel="noopener">${q[0]}</a></li>`).join("")}</ul>
+    <p class="hint">Rechtsstand der Recherche: November 2026. Keine Rechtsberatung.</p>
+    <div class="stationactions"><button class="btn" id="restart">↺ Nochmals spielen</button></div>`;
+  $("certBtn").onclick = printCert; $("albumBtn2").onclick = () => openAlbum();
+  const rating = {};
+  document.querySelectorAll(".stars").forEach(g => g.querySelectorAll("button").forEach(b => b.onclick = () => { rating[g.dataset.k] = +b.dataset.v; g.querySelectorAll("button").forEach(x => x.classList.toggle("on", +x.dataset.v <= +b.dataset.v)); }));
+  const report = () => ["RÜCKMELDUNG – ABPFIFF! Das Wett-Escape", `Team: ${teamName()}`, `Datum: ${new Date().toLocaleString("de-CH")}`,
+    `Zeit: ${fmt(ms)} · Punkte: ${pts}/${MAXPTS} · Gelbe Karten: ${totalGelb()} · Joker: ${JOKER_TOTAL - S.jokers} · Penaltys: ${S.penGoals}/5`,
+    "", "Fehlversuche pro Station:", ...STATIONEN.map((s,i)=>`  ${i+1}. ${s.ort}: ${S.st[i].gelb} Fehlversuch(e)${S.st[i].joker?", Joker genutzt":""}`),
+    "", `Verständlichkeit: ${rating.verst||"–"}/5`, `Bedienung: ${rating.bed||"–"}/5`, `Spass: ${rating.spass||"–"}/5`,
+    `Unklarste Station: ${$("unklar").value || "–"}`, `Kommentar: ${$("kommentar").value.trim() || "–"}`].join("\n");
+  $("copyFb").onclick = async () => { try{ await navigator.clipboard.writeText(report()); toast("Rückmeldung kopiert ✓"); }
+    catch(e){ const t = document.createElement("textarea"); t.value = report(); document.body.appendChild(t); t.select(); try{ document.execCommand("copy"); toast("Rückmeldung kopiert ✓"); }catch(_){} t.remove(); } };
+  $("dlFb").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([report()], {type:"text/plain;charset=utf-8"}));
+    a.download = `rueckmeldung-${teamName().replace(/[^a-z0-9]+/gi,"-").toLowerCase()}.txt`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
+  $("restart").onclick = () => { clearSave(); location.reload(); };
+}
+function starField(k, label){ return `<div><b>${label}</b><div class="stars" data-k="${k}" role="group" aria-label="${label}">${[1,2,3,4,5].map(v=>`<button data-v="${v}" aria-label="${v} von 5">★</button>`).join("")}</div></div>`; }
+
+function printCert(){
+  const pts = totalPoints();
+  $("cert").innerHTML = `<div class="certin">
+    <div style="font-size:2.4rem">⚽🏆⚽</div>
+    <div style="letter-spacing:4px;font-weight:800;color:#b38a17">URKUNDE</div>
+    <h1>ABPFIFF! – DAS WETT-ESCAPE</h1>
+    <p>Hiermit wird bestätigt, dass das Team</p>
+    <div class="team">${esc(teamName())}</div>
+    <p>alle 12 Stationen zu den rechtlichen Regeln für Fussballwetten in der Schweiz gelöst,<br>den Code <b>${LOESUNG}</b> geknackt und das Penaltyschiessen gewonnen hat.</p>
+    <div class="row"><span>Punkte: ${pts} / ${MAXPTS}</span><span>Zeit: ${fmt(S.end - S.start)}</span><span>Penaltys: ${S.penGoals}/5</span><span>Rang: ${rangText(pts)}</span></div>
+    <p style="font-size:.85rem">Themen: Bewilligte Anbieter · Mindestalter · Ausländische Onlineangebote · Spielerschutz · Werbung · Wettkampfmanipulation</p>
+    <div class="sig"><span>Datum: ${new Date().toLocaleDateString("de-CH")}</span><span>Ruedi, Stadionwart</span></div>
+    <p style="font-size:.7rem;color:#777;margin-top:16px">Schulprojekt (VA) · Lernspiel ohne echte Wetten, Einsätze oder Preise · Rechtsstand November 2026</p></div>`;
+  setTimeout(() => window.print(), 50);
+}
+
+/* ======================= Sammelalbum ======================= */
+function openAlbum(focus){
+  const n = solvedCount();
+  openModal(`<h2>🎴 Sammelalbum</h2><p class="hint" style="margin:0">${n} von ${STATIONEN.length} Stickern gesammelt. Löst Stationen, um weitere freizuschalten.</p>
+    <div class="album">${STATIONEN.map((s,i) => { const got = S.st[i].solved; return `
+      <div class="sticker ${got?"":"locked"} ${got&&i===focus?"shine":""}" style="--c1:${s.farben[0]};--c2:${s.farben[1]}">
+        <div class="simg"><span class="snr">${i+1}</span><span class="semoji">${got?s.sticker.emoji:"❔"}</span>${avatar(s.avatar)}</div>
+        <div class="sbody"><div class="stitle">${got?s.sticker.titel:"???"}</div><div class="sfact">${got?s.sticker.fakt:"Station "+(i+1)+": "+s.ort}</div></div></div>`; }).join("")}</div>`);
+}
+
+/* ======================= Lehrpersonen ======================= */
+function openTeacher(){
+  openModal(`<h2>👩‍🏫 Lehrpersonen-Ansicht</h2>
+    <p class="lead" style="margin-top:4px">«Abpfiff! – Das Wett-Escape» ist ein Online-Escape-Spiel zu den rechtlichen Rahmenbedingungen von Fussballwetten in der Schweiz. Es ist kostenlos und enthält <b>keine echten Wetten, Einsätze oder Geld- und Sachpreise</b>.</p>
+    <div class="stats" style="margin-top:6px">
+      <div class="stat led"><small>STATIONEN</small><span>12</span></div><div class="stat led"><small>AUFGABENTYPEN</small><span>11</span></div>
+      <div class="stat led"><small>DAUER</small><span>30–45'</span></div><div class="stat led"><small>QUELLEN</small><span>${QUELLEN.length}</span></div></div>
+    <h3>Lernziele</h3>
+    <ul><li>Die Lernenden unterscheiden zwischen dem <b>Anbieten</b> und der <b>Teilnahme</b> an Sportwetten und wissen, dass sich das Gesetz vor allem an die Anbieterseite richtet.</li>
+      <li>Sie beurteilen konkrete Handlungen fiktiver Personen als zulässig oder unzulässig und begründen dies mit dem Geldspielgesetz.</li>
+      <li>Sie kennen die bewilligten Anbieter, das Mindestalter, die Regeln für ausländische Onlineangebote, den Spielerschutz und die Werberegeln.</li></ul>
+    <h3>Die fünf Leitfragen – Antworten und Stationen</h3>
+    <div class="leit">${LEITFRAGEN.map(l=>`<div><b>${l.f}</b><br>${l.a}<br><span class="hint">Behandelt an Station ${l.s.join(", ")}</span></div>`).join("")}</div>
+    <h3>Lösungsschlüssel</h3>
+    <div style="overflow:auto"><table class="keytable"><tr><th>#</th><th>Ort / Person</th><th>Typ</th><th>Rolle</th><th>Lösung</th><th>Buchst.</th></tr>
+      ${STATIONEN.map((s,i)=>`<tr><td>${i+1}</td><td><b>${s.ort}</b><br>${s.person}</td><td>${s.thema}</td><td>${s.rolle}</td><td>${s.loesung}</td><td><b>${s.letter}</b></td></tr>`).join("")}
+      <tr><td>⚽</td><td><b>Penaltypunkt</b></td><td colspan="3">Code <b>${LOESUNG}</b> öffnet die letzte Station. Danach 5 zufällige Fragen aus einem Pool von ${PENALTY_POOL.length}; mind. 3 Treffer nötig, sonst neue Runde.</td><td></td></tr></table></div>
+    <h3>Spielmechanik</h3>
+    <ul><li>Pro Station 100 Punkte; jede Gelbe Karte (Fehlversuch) −${PUNKTE.gelb}, VAR-Joker −${PUNKTE.joker}, mindestens ${PUNKTE.minimum}. Pro Penaltytor +${PUNKTE.tor}. Maximum: ${MAXPTS}.</li>
+      <li>Nach jeder Station erscheinen eine Erklärung und ein Quellenbeleg; zusätzlich wird ein Sticker im Sammelalbum freigeschaltet.</li>
+      <li>Am Ende: Urkunde zum Drucken, lokale Bestenliste und ein Feedback-Formular, das Fehlversuche pro Station automatisch mitliefert.</li></ul>
+    <h3>Quellen (Rechtsstand November 2026)</h3>
+    <ul class="sources">${QUELLEN.map(q=>`<li><a href="${q[1]}" target="_blank" rel="noopener">${q[0]}</a></li>`).join("")}</ul>
+    <p class="hint">Alle Personen, Firmen und Websites sind erfunden (ausser Swisslos, Loterie Romande und Behörden). Keine Rechtsberatung.</p>`);
+}
+
+/* ======================= Konfetti ======================= */
+function confetti(){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const c = $("confetti"), ctx = c.getContext("2d"); c.width = innerWidth; c.height = innerHeight;
+  const colors = ["#f5c542","#e74c3c","#ffffff","#1f9a55","#3e8ed0"];
+  const parts = Array.from({length:220}, () => ({x:Math.random()*c.width, y:-20-Math.random()*c.height*.6, w:6+Math.random()*6, h:8+Math.random()*8, vx:-2+Math.random()*4, vy:2+Math.random()*4, r:Math.random()*6, vr:-.2+Math.random()*.4, col:colors[Math.floor(Math.random()*colors.length)]}));
+  let f = 0;
+  (function loop(){ ctx.clearRect(0,0,c.width,c.height);
+    parts.forEach(p => { p.x+=p.vx; p.y+=p.vy; p.vy+=.03; p.r+=p.vr; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r); ctx.fillStyle=p.col; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore(); });
+    if(++f < 420) requestAnimationFrame(loop); else ctx.clearRect(0,0,c.width,c.height); })();
+}
+
+/* ======================= Start ======================= */
+function startGame(){
+  $("board").classList.remove("hidden");
+  clearInterval(timer); if(!S.end) timer = setInterval(tick, 1000); tick();
+  save(); sfx.whistle(); ticker(`Anpfiff! ${teamName()} ist im Stadion eingeschlossen – 12 Buchstaben gesucht`);
+  if(S.won) return showWin();
+  renderMap();
+}
+$("startBtn").onclick = () => {
+  S = freshState(); S.team = $("teamName").value.trim(); S.start = Date.now(); save();
+  cutscene(INTRO_LINES, () => { S.start = Date.now(); startGame(); });
+};
+$("mapBtn").onclick = () => { if(S.won) showWin(); else renderMap(); };
+$("albumBtn").onclick = () => openAlbum();
+$("soundBtn").onclick = () => { soundOn = !soundOn; $("soundBtn").textContent = soundOn ? "🔊" : "🔇"; if(!soundOn && crowd){ toggleCrowd(); $("crowdBtn").classList.remove("on"); } };
+$("crowdBtn").onclick = () => { if(!soundOn){ toast("Zuerst Soundeffekte einschalten 🔊"); return; } const on = toggleCrowd(); $("crowdBtn").classList.toggle("on", on); toast(on ? "Stadionatmosphäre an 🏟️" : "Stadionatmosphäre aus"); };
+$("teacherBtn").onclick = openTeacher; $("teacherBtn2").onclick = openTeacher;
+$("bestIntro").innerHTML = bestTable();
+const saved = load();
+if(saved && saved.start && !saved.won){
+  $("resumeBtn").classList.remove("hidden");
+  $("resumeBtn").textContent = `Weiterspielen${saved.team?" als «"+saved.team+"»":""} (${saved.st.filter(x=>x.solved).length}/${STATIONEN.length})`;
+  $("resumeBtn").onclick = () => { S = saved; document.body.classList.add("lightsout"); startGame(); };
+}
+if(location.hash === "#lehrer") openTeacher();
+window.addEventListener("hashchange", () => { if(location.hash === "#lehrer") openTeacher(); });
+</script>
+</body>
+</html>
