@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="de-CH">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Abpfiff! – Das Wett-Escape</title>
+    <meta
+      name="description"
+      content="Online-Escape-Spiel zu den rechtlichen Rahmenbedingungen von Fussballwetten in der Schweiz. Kostenlos, ohne echte Wetten, ohne Geld- oder Sachpreise."
+    />
+    <meta name="theme-color" content="#07140e" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E⚽%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="assets/css/layout.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/stations.css" />
+    <link rel="stylesheet" href="assets/css/print.css" media="print" />
+    <script src="assets/js/spiel.js" defer></script>
+  </head>
+  <body>
+    <canvas id="confetti" class="confetti" aria-hidden="true"></canvas>
+
+    <div class="page">
+      <header class="hero">
+        <svg
+          class="hero__art"
+          viewBox="0 0 1000 300"
+          preserveAspectRatio="xMidYMid slice"
+          role="img"
+          aria-label="Fussballstadion bei Nacht mit Flutlicht"
+        >
+          <defs>
+            <linearGradient id="hero-sky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#050b18" />
+              <stop offset="1" stop-color="#14304a" />
+            </linearGradient>
+            <linearGradient id="hero-beam" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#fffbe0" stop-opacity=".55" />
+              <stop offset="1" stop-color="#fffbe0" stop-opacity="0" />
+            </linearGradient>
+            <linearGradient id="hero-grass" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#2f9152" />
+              <stop offset="1" stop-color="#1a5e33" />
+            </linearGradient>
+            <radialGradient id="hero-alarm">
+              <stop offset="0" stop-color="#ff3b30" stop-opacity=".7" />
+              <stop offset="1" stop-color="#ff3b30" stop-opacity="0" />
+            </radialGradient>
+            <pattern id="hero-crowd" width="14" height="12" patternUnits="userSpaceOnUse">
+              <rect width="14" height="12" fill="#1a2334" />
+              <circle cx="4" cy="5" r="2.6" fill="#c0392b" />
+              <circle cx="11" cy="8" r="2.6" fill="#f2f2f2" />
+            </pattern>
+          </defs>
+          <rect width="1000" height="300" fill="url(#hero-sky)" />
+          <g fill="#fff" opacity=".7">
+            <circle cx="120" cy="40" r="1.4" />
+            <circle cx="300" cy="22" r="1" />
+            <circle cx="520" cy="35" r="1.2" />
+            <circle cx="700" cy="18" r="1" />
+            <circle cx="880" cy="44" r="1.4" />
+          </g>
+          <polygon class="hero__beam" points="95,40 0,300 260,300" fill="url(#hero-beam)" />
+          <polygon class="hero__beam hero__beam--delayed" points="905,40 740,300 1000,300" fill="url(#hero-beam)" />
+          <g fill="#c9d1d8">
+            <rect x="90" y="40" width="10" height="150" />
+            <rect x="900" y="40" width="10" height="150" />
+          </g>
+          <g class="hero__lamps" fill="#fffbe0">
+            <rect x="66" y="22" width="58" height="22" rx="3" />
+            <rect x="876" y="22" width="58" height="22" rx="3" />
+          </g>
+          <path d="M0 140 Q500 85 1000 140 L1000 222 L0 222Z" fill="url(#hero-crowd)" />
+          <path d="M0 140 Q500 85 1000 140" stroke="#e9e9e9" stroke-width="5" fill="none" />
+          <rect y="210" width="1000" height="14" fill="#c0392b" />
+          <g fill="#fff" font-family="Bebas Neue, Impact, sans-serif" font-size="11" opacity=".85">
+            <text x="40" y="221">FAIR PLAY</text>
+            <text x="220" y="221">SPIEL MIT KÖPFCHEN</text>
+            <text x="440" y="221">KEINE WETTEN UNTER 18</text>
+            <text x="660" y="221">FAIR PLAY</text>
+            <text x="840" y="221">SPIELERSCHUTZ</text>
+          </g>
+          <rect y="224" width="1000" height="76" fill="url(#hero-grass)" />
+          <ellipse cx="500" cy="268" rx="90" ry="20" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="3" />
+          <line x1="500" y1="224" x2="500" y2="300" stroke="#fff" stroke-opacity=".6" stroke-width="3" />
+          <g class="hero__ball">
+            <circle cx="500" cy="264" r="12" fill="#fff" stroke="#222" stroke-width="1.5" />
+            <polygon points="500,257 506,261 504,268 496,268 494,261" fill="#222" />
+          </g>
+          <g class="hero__alarm">
+            <circle cx="160" cy="150" r="120" fill="url(#hero-alarm)" />
+            <circle cx="840" cy="150" r="120" fill="url(#hero-alarm)" />
+          </g>
+        </svg>
+        <div class="hero__title">
+          <h1 class="hero__heading">⚽ Abpfiff!</h1>
+          <p class="hero__subtitle">Das Wett-Escape · Fussballwetten &amp; Recht in der Schweiz</p>
+        </div>
+      </header>
+
+      <div id="scoreboard" class="scoreboard" aria-label="Anzeigetafel" hidden>
+        <div class="scoreboard__stat">
+          <span class="scoreboard__label">Zeit</span>
+          <span class="scoreboard__value" data-ref="clock">00:00</span>
+        </div>
+        <div class="scoreboard__stat">
+          <span class="scoreboard__label">Punkte</span>
+          <span class="scoreboard__value" data-ref="points">0</span>
+        </div>
+        <div class="scoreboard__slots" data-ref="slots" aria-label="Gesammelte Code-Buchstaben"></div>
+        <div class="scoreboard__buttons">
+          <button
+            type="button"
+            class="icon-button"
+            data-action="map"
+            title="Stadionkarte"
+            aria-label="Zur Stadionkarte"
+          >
+            🗺️
+          </button>
+          <button
+            type="button"
+            class="icon-button"
+            data-action="album"
+            title="Sammelalbum"
+            aria-label="Sammelalbum öffnen"
+          >
+            🎴
+            <span class="icon-button__badge" data-ref="album-count">0</span>
+          </button>
+          <button
+            type="button"
+            class="icon-button"
+            data-action="crowd"
+            title="Stadionatmosphäre"
+            aria-label="Stadionatmosphäre"
+            aria-pressed="false"
+          >
+            🏟️
+          </button>
+          <button
+            type="button"
+            class="icon-button"
+            data-action="sound"
+            title="Soundeffekte"
+            aria-label="Soundeffekte stumm schalten"
+            aria-pressed="false"
+          >
+            🔊
+          </button>
+        </div>
+        <div class="scoreboard__ticker" aria-live="polite">
+          <span class="scoreboard__ticker-text is-running" data-ref="ticker">+++ Willkommen im Stadion +++</span>
+        </div>
+      </div>
+
+      <main>
+        <section id="view-intro" class="view panel"></section>
+        <section id="view-map" class="view" hidden></section>
+        <section id="view-station" class="view panel" hidden></section>
+        <section id="view-lock" class="view panel" hidden></section>
+        <section id="view-penalty" class="view panel" hidden></section>
+        <section id="view-result" class="view panel" hidden></section>
+        <noscript>
+          <p class="panel">Für dieses Spiel muss JavaScript aktiviert sein.</p>
+        </noscript>
+      </main>
+
+      <footer class="site-footer">
+        <p>
+          Keine Rechtsberatung · Alle Illustrationen selbst gezeichnet, alle Personen, Firmen und Websites erfunden
+          (ausser Swisslos, Loterie Romande und Behörden)
+        </p>
+        <p>
+          Hilfe bei Problemen mit Geldspielen:
+          <a href="https://www.sos-spielsucht.ch" target="_blank" rel="noopener">SOS Spielsucht</a>
+          · Gratis-Hotline 0800 040 080
+        </p>
+      </footer>
+    </div>
+
+    <dialog id="dialog" class="dialog">
+      <button type="button" class="dialog__close" data-action="close-dialog" aria-label="Schliessen">✕</button>
+      <div class="dialog__body" data-ref="dialog-body"></div>
+    </dialog>
+
+    <dialog id="cutscene" class="cutscene" aria-label="Einleitung">
+      <div class="cutscene__portrait" data-ref="portrait"></div>
+      <div class="cutscene__box">
+        <p class="cutscene__name" data-ref="name"></p>
+        <p class="cutscene__text" data-ref="text" aria-live="polite"></p>
+        <div class="cutscene__controls">
+          <span class="cutscene__dots" data-ref="dots"></span>
+          <button type="button" class="btn btn--ghost btn--sm" data-action="skip">Überspringen</button>
+          <button type="button" class="btn btn--sm" data-action="next">Weiter ▶</button>
+        </div>
+      </div>
+    </dialog>
+
+    <div id="print-root" class="print-root" aria-hidden="true"></div>
+  </body>
+</html>

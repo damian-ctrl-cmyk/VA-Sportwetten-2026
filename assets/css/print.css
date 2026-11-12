@@ -1,0 +1,41 @@
+/* ==========================================================================
+   Druckansicht: es wird ausschliesslich das Zertifikat gedruckt.
+   ========================================================================== */
+
+@page {
+  size: A4 landscape;
+  margin: 12mm;
+}
+
+html,
+body {
+  background: #fff !important;
+}
+
+body::before,
+.page,
+.confetti,
+.dialog,
+.cutscene,
+.toast {
+  display: none !important;
+}
+
+.print-root {
+  display: block !important;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.print-root .certificate {
+  max-width: none;
+  box-shadow: none;
+}
+
+.print-root .certificate__frame {
+  padding: 40px 56px;
+}
+
+.print-root .certificate__name {
+  font-size: 3.4rem;
+}

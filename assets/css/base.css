@@ -1,0 +1,177 @@
+/* ==========================================================================
+   Grundlagen: Design-Tokens, Reset, Typografie, Hilfsklassen
+   ========================================================================== */
+
+:root {
+  /* Farben */
+  --color-night: #07140e;
+  --color-pitch: #1d6b3a;
+  --color-pitch-dark: #18592f;
+  --color-surface: #fbf8ef;
+  --color-surface-raised: #ffffff;
+  --color-ink: #17201b;
+  --color-muted: #5d665f;
+  --color-line: #ddd7c6;
+  --color-chalk: #eef4ef;
+  --color-gold: #f5c542;
+  --color-gold-dark: #b38a17;
+  --color-led: #ffb627;
+  --color-success: #1f9a55;
+  --color-success-dark: #136c3a;
+  --color-success-bg: #e2f5e9;
+  --color-danger: #d23b30;
+  --color-danger-dark: #8f231c;
+  --color-danger-bg: #fde8e6;
+  --color-info: #2f6fd0;
+  --color-info-dark: #1d4a91;
+  --color-info-bg: #e8f0fd;
+  --color-dark: #1b1f1c;
+
+  /* Schrift */
+  --font-display: 'Bebas Neue', Impact, 'Arial Narrow', sans-serif;
+  --font-body: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+
+  /* Abstände & Formen */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --shadow-block: 0 10px 0 rgba(0, 0, 0, 0.25);
+  --shadow-soft: 0 6px 18px rgba(0, 0, 0, 0.25);
+
+  /* Bewegung */
+  --ease-bounce: cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--color-night);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-body);
+  line-height: 1.5;
+  color: var(--color-chalk);
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(255, 255, 220, 0.18), transparent 55%),
+    repeating-linear-gradient(90deg, var(--color-pitch) 0 70px, var(--color-pitch-dark) 70px 140px);
+  background-attachment: fixed;
+}
+
+/* Abdunkelung für Lesbarkeit; wird dunkler, wenn das Flutlicht aus ist. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(rgba(7, 20, 14, 0.55), rgba(7, 20, 14, 0.78));
+  transition: background 1.2s;
+}
+
+body.is-lights-out::before {
+  background: linear-gradient(rgba(3, 6, 10, 0.82), rgba(3, 6, 10, 0.9));
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+ul,
+ol,
+dl,
+figure {
+  margin: 0;
+}
+
+ul,
+ol {
+  padding-left: 1.2em;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+/* Hilfsklassen */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.lead {
+  font-size: 1.05rem;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.center {
+  text-align: center;
+}
+
+.section-title {
+  margin: var(--space-5) 0 var(--space-2);
+  font-size: 1.15rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Druckbereich: nur in der Druckansicht sichtbar (siehe print.css). */
+.print-root {
+  display: none;
+}
