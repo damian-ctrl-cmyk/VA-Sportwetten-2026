@@ -8,7 +8,7 @@
  *   content/story.js      Texte von Stadionwart Ruedi
  *   content/takeaways.js  Kernaussagen am Spielende
  *   content/sources.js    Quellenverzeichnis
- *   config.js             Einstellungen (Punkte, Feedback-Formular-Link, Spieltag)
+ *   config.js             Einstellungen (Punkte, Spieltag, E-Mail für Rückmeldungen)
  *   core/…                Spielzustand, Regeln, Speichern, Ton
  *   stations/…            Die 11 Aufgabentypen
  *   views/…               Ansichten (Start, Karte, Station, Penaltys, Ergebnis, Zertifikat)
@@ -272,7 +272,13 @@
      * für die Testrückmeldungen. Leer lassen, dann können die Spielenden ihre
      * Auswertung nur kopieren oder als Textdatei speichern.
      */
-    feedbackFormUrl: ""
+    feedbackFormUrl: "",
+    /**
+     * E-Mail-Adresse für die Rückmeldungen. Am Spielende öffnet der Button
+     * «Per E-Mail senden» das E-Mail-Programm mit ausgefülltem Betreff und Text.
+     * Leer lassen, um den Button auszublenden.
+     */
+    feedbackEmail: "Damian_Buehlmann@sluz.ch"
   });
 
   // assets/js/content/stations.js
@@ -2529,6 +2535,22 @@
       return false;
     }
   }
+  function openMail(address, subject, body2) {
+    const params = `subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body2.replace(/\n/g, "\r\n"))}`;
+    window.location.href = `mailto:${address}?${params}`;
+  }
+  function feedbackHint(hasEmail, hasForm) {
+    if (hasEmail) {
+      return html`
+      Bewerte das Spiel und schick uns deine Rückmeldung mit einem Klick. Falls sich kein E-Mail-Programm öffnet: «Auswertung
+      kopieren» und an <a href="mailto:${CONFIG.feedbackEmail}">${CONFIG.feedbackEmail}</a> senden.
+    `;
+    }
+    if (hasForm) {
+      return "Füll bitte kurz das Formular aus. Mit «Auswertung kopieren» kannst du deine Spielwerte direkt ins Formular einfügen.";
+    }
+    return "Bewerte das Spiel und gib uns die Auswertung als Text oder Datei.";
+  }
   function downloadText(filename, text) {
     const url = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
     const link = Object.assign(document.createElement("a"), { href: url, download: filename });
@@ -2539,6 +2561,7 @@
     const { state: state2 } = store;
     const points = totalPoints(state2);
     const hasForm = Boolean(CONFIG.feedbackFormUrl);
+    const hasEmail = Boolean(CONFIG.feedbackEmail);
     setHtml(
       element,
       html`
@@ -2580,7 +2603,7 @@
 
       <h3 class="section-title">📝 Deine Rückmeldung zum Spiel</h3>
       <p class="hint">
-        ${hasForm ? "Füll bitte kurz das Formular aus. Mit «Auswertung kopieren» kannst du deine Spielwerte direkt ins Formular einfügen." : "Bewerte das Spiel und gib uns die Auswertung als Text oder Datei."}
+        ${feedbackHint(hasEmail, hasForm)}
       </p>
       <form class="feedback-form" data-ref="feedback-form">
         ${RATINGS.map(ratingField)}
@@ -2606,12 +2629,20 @@
           ></textarea>
         </label>
         <div class="actions">
+          ${hasEmail ? html`
+                  <button type="button" class="btn" data-action="mail">✉️ Per E-Mail senden</button>
+                ` : ""}
           ${hasForm ? html`
-                  <a class="btn" href="${CONFIG.feedbackFormUrl}" target="_blank" rel="noopener">
+                  <a
+                    class="btn ${hasEmail ? "btn--ghost" : ""}"
+                    href="${CONFIG.feedbackFormUrl}"
+                    target="_blank"
+                    rel="noopener"
+                  >
                     📨 Zum Feedback-Formular
                   </a>
                 ` : ""}
-          <button type="button" class="btn ${hasForm ? "btn--ghost" : ""}" data-action="copy">
+          <button type="button" class="btn ${hasEmail || hasForm ? "btn--ghost" : ""}" data-action="copy">
             📋 Auswertung kopieren
           </button>
           <button type="button" class="btn btn--ghost" data-action="download">💾 Als Textdatei speichern</button>
@@ -2644,7 +2675,14 @@
       if (action === "print") onPrint();
       else if (action === "album") onAlbum();
       else if (action === "restart") onRestart();
-      else if (action === "copy") {
+      else if (action === "mail") {
+        openMail(
+          CONFIG.feedbackEmail,
+          `Rückmeldung Wett-Escape – ${displayPlayerName(store.state)}`,
+          buildReport(store.state, form)
+        );
+        toast("Dein E-Mail-Programm öffnet sich – dort nur noch auf «Senden» klicken.");
+      } else if (action === "copy") {
         const copied = await copyToClipboard(buildReport(store.state, form));
         toast(copied ? "Auswertung kopiert ✓" : "Kopieren nicht möglich – bitte als Datei speichern.");
       } else if (action === "download") {
